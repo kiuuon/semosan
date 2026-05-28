@@ -9,7 +9,9 @@
     "web": "expo start --web",
     "dev": "pnpm run start",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "clean": "rimraf .expo dist web-build"
+    "clean": "rimraf .expo dist web-build",
+    "lint": "pnpm -w eslint .",
+    "format": "pnpm -w prettier . --write"
   },
   "dependencies": {
     "expo": "~54.0.33",

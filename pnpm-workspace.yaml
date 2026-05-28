@@ -1,6 +1,6 @@
 packages:
-  - "apps/*"
-  - "packages/*"
+  - 'apps/*'
+  - 'packages/*'
 
 engineStrict: true
 preferWorkspacePackages: true
@@ -8,5 +8,5 @@ autoInstallPeers: true
 strictPeerDependencies: false
 
 allowBuilds:
-  "@nestjs/core": true
-  "unrs-resolver": true
+  '@nestjs/core': true
+  'unrs-resolver': true

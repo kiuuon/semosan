@@ -1,28 +1,17 @@
 node_modules
 .DS_Store
 
-# Expo
-apps/mobile/.expo
-apps/mobile/dist
-apps/mobile/web-build
-
-# Nest/TS
-apps/server/dist
-apps/server/coverage
+# Env
+.env
+.env.*
+.env.*.local
 
 # Logs
+*.log
 npm-debug.log*
 pnpm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-
-# Env
-.env
-.env.*.local
-node_modules
-.DS_Store
-.env
-.env.*
 
 # pnpm
 .pnpm-store
@@ -32,7 +21,6 @@ node_modules
 dist
 web-build
 
-# Nest
+# Nest/TS
 coverage
-*.log
 
