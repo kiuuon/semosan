@@ -1,0 +1,21 @@
+{
+  "name": "semoasn-mono",
+  "private": true,
+  "packageManager": "pnpm@11.4.0",
+  "engines": {
+    "node": "24.16.0",
+    "pnpm": "11.4.0"
+  },
+  "scripts": {
+    "dev": "pnpm -r --parallel dev",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
+    "dev:server": "pnpm --filter @semoasn/server dev",
+    "dev:mobile": "pnpm --filter @semoasn/mobile start",
+    "clean": "pnpm -r clean && pnpm -w exec rimraf node_modules"
+  },
+  "devDependencies": {
+    "rimraf": "^6.0.1"
+  }
+}
