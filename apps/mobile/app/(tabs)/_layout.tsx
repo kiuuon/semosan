@@ -9,6 +9,7 @@ export default function TabLayout() {
         title: '',
       })}
     >
+      <Tabs.Screen name="index" options={{ href: null }} />
       <Tabs.Screen
         name="home/index"
         options={{
