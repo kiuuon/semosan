@@ -6,13 +6,7 @@ import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended'
 
 export default tseslint.config(
   {
-    ignores: [
-      '**/node_modules/**',
-      '**/dist/**',
-      '**/coverage/**',
-      '**/.expo/**',
-      '**/web-build/**',
-    ],
+    ignores: ['**/node_modules/**', '**/dist/**', '**/coverage/**', '**/.expo/**', '**/web-build/**'],
   },
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
