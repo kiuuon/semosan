@@ -9,4 +9,5 @@ strictPeerDependencies: false
 
 allowBuilds:
   '@nestjs/core': true
+  bcrypt: true
   'unrs-resolver': true
