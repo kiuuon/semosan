@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { router } from 'expo-router';
+import { signUp } from '../../lib/apis/auth';
 import { authStyles as styles } from './styles';
 
 type SignUpProps = {
@@ -28,11 +30,10 @@ export function SignUp({ onSwitchToSignIn }: SignUpProps) {
     setLoading(true);
 
     try {
-      // TODO: 서버 회원가입 API 연동
-      await new Promise((resolve) => setTimeout(resolve, 400));
-      onSwitchToSignIn();
-    } catch {
-      setError('회원가입에 실패했습니다. 다시 시도해 주세요.');
+      await signUp(email.trim(), password);
+      router.replace('/(tabs)/home');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '회원가입에 실패했습니다. 다시 시도해 주세요.');
     } finally {
       setLoading(false);
     }

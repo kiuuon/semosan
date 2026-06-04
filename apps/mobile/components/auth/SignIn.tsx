@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
+import { login } from '../../lib/apis/auth';
 import { authStyles as styles } from './styles';
 
 type SignInProps = {
@@ -22,11 +23,11 @@ export function SignIn({ onSwitchToSignUp }: SignInProps) {
     setLoading(true);
 
     try {
-      // TODO: 서버 인증 API 연동
-      await new Promise((resolve) => setTimeout(resolve, 400));
+      await login(email.trim(), password);
+
       router.replace('/(tabs)/home');
-    } catch {
-      setError('로그인에 실패했습니다. 다시 시도해 주세요.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '로그인에 실패했습니다. 다시 시도해 주세요.');
     } finally {
       setLoading(false);
     }

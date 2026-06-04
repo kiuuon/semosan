@@ -1,9 +1,10 @@
 import { ConflictException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import * as bcrypt from 'bcrypt';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { randomBytes } from 'crypto';
 import { getRandomNickname } from '@woowa-babble/random-nickname';
+
 import { USER_STATUS } from '../lib/constants/status';
 import { User, UserDocument } from '../schemas/user.schema';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -17,6 +18,18 @@ export class UsersService {
 
   findAll() {
     return this.userModel.find({ status: USER_STATUS.ACTIVE }).select('-password').exec();
+  }
+
+  findActiveById(id: string) {
+    if (!Types.ObjectId.isValid(id)) {
+      return null;
+    }
+
+    return this.userModel.findOne({ _id: id, status: USER_STATUS.ACTIVE }).exec();
+  }
+
+  findActiveByEmailWithPassword(email: string) {
+    return this.userModel.findOne({ email, status: USER_STATUS.ACTIVE }).exec();
   }
 
   async create(createUserDto: CreateUserDto) {
@@ -39,7 +52,7 @@ export class UsersService {
           status: USER_STATUS.ACTIVE,
         });
 
-        return this.userModel.findById(user._id).select('-password').lean().exec();
+        return user;
       } catch (error) {
         if (!this.isDuplicateKeyError(error)) {
           throw error;
