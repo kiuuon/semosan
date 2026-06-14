@@ -1,5 +1,9 @@
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View, Alert } from 'react-native';
+import { router } from 'expo-router';
+import { useMutation } from '@tanstack/react-query';
+
+import { signUp } from '../../lib/apis/auth';
 import { authStyles as styles } from './styles';
 
 type SignUpProps = {
@@ -10,32 +14,25 @@ export function SignUp({ onSwitchToSignIn }: SignUpProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+
+  const { mutate, isPending } = useMutation({
+    mutationFn: ({ email, password }: { email: string; password: string }) => signUp(email, password),
+    onSuccess: () => {
+      router.replace('/(tabs)/home');
+    },
+    onError: (error) => {
+      console.error(error);
+      Alert.alert('회원가입에 실패했습니다. 다시 시도해 주세요.');
+    },
+  });
 
   const passwordsMatch = password === passwordConfirm;
   const canSubmit = email.trim().length > 0 && password.length >= 8 && passwordConfirm.length > 0 && passwordsMatch;
 
-  async function handleSignup() {
-    if (!canSubmit || loading) return;
+  function handleSignup() {
+    if (!canSubmit || isPending) return;
 
-    if (!passwordsMatch) {
-      setError('비밀번호가 일치하지 않습니다.');
-      return;
-    }
-
-    setError(null);
-    setLoading(true);
-
-    try {
-      // TODO: 서버 회원가입 API 연동
-      await new Promise((resolve) => setTimeout(resolve, 400));
-      onSwitchToSignIn();
-    } catch {
-      setError('회원가입에 실패했습니다. 다시 시도해 주세요.');
-    } finally {
-      setLoading(false);
-    }
+    mutate({ email: email.trim(), password });
   }
 
   return (
@@ -89,18 +86,17 @@ export function SignUp({ onSwitchToSignIn }: SignUpProps) {
         {passwordConfirm.length > 0 && !passwordsMatch ? (
           <Text style={styles.error}>비밀번호가 일치하지 않습니다.</Text>
         ) : null}
-        {error ? <Text style={styles.error}>{error}</Text> : null}
 
         <Pressable
           style={({ pressed }) => [
             styles.button,
-            (!canSubmit || loading) && styles.buttonDisabled,
-            pressed && canSubmit && !loading && styles.buttonPressed,
+            (!canSubmit || isPending) && styles.buttonDisabled,
+            pressed && canSubmit && !isPending && styles.buttonPressed,
           ]}
           onPress={handleSignup}
-          disabled={!canSubmit || loading}
+          disabled={!canSubmit || isPending}
         >
-          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>회원가입</Text>}
+          {isPending ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>회원가입</Text>}
         </Pressable>
       </View>
 
