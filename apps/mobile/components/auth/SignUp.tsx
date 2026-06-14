@@ -27,9 +27,6 @@ export function SignUp({ onSwitchToSignIn }: SignUpProps) {
       setCodeSent(true);
       Alert.alert('인증 코드를 발송했습니다.', '메일함에서 6자리 코드를 확인해 주세요.');
     },
-    onError: (error) => {
-      Alert.alert('발송 실패', error instanceof Error ? error.message : '인증 코드 발송에 실패했습니다.');
-    },
   });
 
   const { mutate: verifyCode, isPending: isVerifyingCode } = useMutation({
@@ -38,13 +35,11 @@ export function SignUp({ onSwitchToSignIn }: SignUpProps) {
       setVerificationToken(data.verificationToken);
       setStep('password');
     },
-    onError: (error) => {
-      Alert.alert('인증 실패', error instanceof Error ? error.message : '이메일 인증에 실패했습니다.');
-    },
   });
 
   const { mutate: register, isPending: isRegistering } = useMutation({
     mutationFn: () => {
+      // 추후 제거 필요
       if (!verificationToken) {
         throw new Error('이메일 인증이 필요합니다.');
       }
@@ -53,9 +48,6 @@ export function SignUp({ onSwitchToSignIn }: SignUpProps) {
     },
     onSuccess: () => {
       router.replace('/(tabs)/home');
-    },
-    onError: (error) => {
-      Alert.alert('회원가입 실패', error instanceof Error ? error.message : '회원가입에 실패했습니다.');
     },
   });
 

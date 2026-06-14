@@ -5,7 +5,7 @@ import * as bcrypt from 'bcrypt';
 import { createHash, randomBytes } from 'crypto';
 import { Model, Types } from 'mongoose';
 
-import { ACCESS_TOKEN_EXPIRES_IN, REFRESH_TOKEN_BYTES, REFRESH_TOKEN_EXPIRES_MS } from '../lib/constants/auth';
+import { ACCESS_TOKEN_EXPIRES_IN, REFRESH_TOKEN_BYTES, REFRESH_TOKEN_EXPIRES_MS } from '../common/constants/auth';
 import { RefreshToken, RefreshTokenDocument } from '../schemas/refresh-token.schema';
 import { User, UserDocument } from '../schemas/user.schema';
 import { UsersService } from '../users/users.service';
@@ -64,14 +64,14 @@ export class AuthService {
       .exec();
 
     if (!stored) {
-      throw new UnauthorizedException('유효하지 않거나 만료된 refresh token입니다.');
+      throw new UnauthorizedException('유효하지 않거나 만료된 요청입니다. 다시 로그인해 주세요.');
     }
 
     const user = await this.usersService.findActiveById(stored.userId.toString());
 
     if (!user) {
       await this.revokeRefreshToken(stored);
-      throw new UnauthorizedException('유효하지 않거나 만료된 refresh token입니다.');
+      throw new UnauthorizedException('유효하지 않거나 만료된 요청입니다. 다시 로그인해 주세요.');
     }
 
     await this.revokeRefreshToken(stored);

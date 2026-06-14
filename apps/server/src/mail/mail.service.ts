@@ -1,4 +1,4 @@
-import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Resend } from 'resend';
 
@@ -33,7 +33,6 @@ export class MailService {
 
     if (error) {
       this.logger.error(`Failed to send verification email to ${email}`, error);
-      throw new InternalServerErrorException('인증 메일 발송에 실패했습니다. 잠시 후 다시 시도해 주세요.');
     }
   }
 }

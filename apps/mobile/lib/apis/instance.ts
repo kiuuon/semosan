@@ -12,6 +12,7 @@ async function getInstance(): Promise<AxiosInstance> {
       'Content-Type': 'application/json',
       ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
     },
+    timeout: 10000,
   });
 
   instance.interceptors.response.use(

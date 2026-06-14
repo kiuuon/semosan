@@ -1,6 +1,6 @@
 import { IsEmail, IsString, Length } from 'class-validator';
 
-import { EMAIL_CODE_LENGTH } from '../../lib/constants/email-verification';
+import { EMAIL_CODE_LENGTH } from '../../common/constants/email-verification';
 
 export class VerifyEmailCodeDto {
   @IsEmail()
