@@ -1,5 +1,6 @@
 import { Body, Controller, Get, InternalServerErrorException, Post, UseGuards } from '@nestjs/common';
 
+import { EmailVerificationService } from '../auth/email-verification.service';
 import { AuthService } from '../auth/auth.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -10,10 +11,13 @@ export class UsersController {
   constructor(
     private readonly usersService: UsersService,
     private readonly authService: AuthService,
+    private readonly emailVerificationService: EmailVerificationService,
   ) {}
 
   @Post()
   async create(@Body() createUserDto: CreateUserDto) {
+    await this.emailVerificationService.validateAndConsumeToken(createUserDto.email, createUserDto.verificationToken);
+
     const user = await this.usersService.create(createUserDto);
 
     if (!user?._id) {

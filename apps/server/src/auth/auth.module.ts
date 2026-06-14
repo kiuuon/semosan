@@ -4,16 +4,20 @@ import { JwtModule } from '@nestjs/jwt';
 import { MongooseModule } from '@nestjs/mongoose';
 import { PassportModule } from '@nestjs/passport';
 
+import { MailModule } from '../mail/mail.module';
+import { EmailVerification, EmailVerificationSchema } from '../schemas/email-verification.schema';
 import { RefreshToken, RefreshTokenSchema } from '../schemas/refresh-token.schema';
 import { UsersModule } from '../users/users.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { EmailVerificationService } from './email-verification.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { JwtStrategy } from './strategies/jwt.strategy';
 
 @Module({
   imports: [
     forwardRef(() => UsersModule),
+    MailModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -22,10 +26,13 @@ import { JwtStrategy } from './strategies/jwt.strategy';
       }),
       inject: [ConfigService],
     }),
-    MongooseModule.forFeature([{ name: RefreshToken.name, schema: RefreshTokenSchema }]),
+    MongooseModule.forFeature([
+      { name: RefreshToken.name, schema: RefreshTokenSchema },
+      { name: EmailVerification.name, schema: EmailVerificationSchema },
+    ]),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, JwtAuthGuard],
-  exports: [AuthService, JwtModule, JwtAuthGuard],
+  providers: [AuthService, EmailVerificationService, JwtStrategy, JwtAuthGuard],
+  exports: [AuthService, EmailVerificationService, JwtModule, JwtAuthGuard],
 })
 export class AuthModule {}
