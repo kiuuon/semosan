@@ -1,0 +1,4 @@
+export const EMAIL_CODE_LENGTH = 6;
+export const EMAIL_CODE_EXPIRES_MS = 10 * 60 * 1000;
+export const EMAIL_VERIFICATION_TOKEN_EXPIRES_MS = 15 * 60 * 1000;
+export const EMAIL_CODE_RESEND_COOLDOWN_MS = 60 * 1000;
