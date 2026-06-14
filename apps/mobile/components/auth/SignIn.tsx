@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View, Alert } from 'react-native';
 import { router } from 'expo-router';
+import { useMutation } from '@tanstack/react-query';
+
 import { login } from '../../lib/apis/auth';
 import { authStyles as styles } from './styles';
 
@@ -11,26 +13,23 @@ type SignInProps = {
 export function SignIn({ onSwitchToSignUp }: SignInProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+
+  const { mutate, isPending } = useMutation({
+    mutationFn: ({ email, password }: { email: string; password: string }) => login(email, password),
+    onSuccess: () => {
+      router.replace('/(tabs)/home');
+    },
+    onError: () => {
+      Alert.alert('로그인에 실패했습니다. 다시 시도해 주세요.');
+    },
+  });
 
   const canSubmit = email.trim().length > 0 && password.length > 0;
 
-  async function handleLogin() {
-    if (!canSubmit || loading) return;
+  function handleLogin() {
+    if (!canSubmit || isPending) return;
 
-    setError(null);
-    setLoading(true);
-
-    try {
-      await login(email.trim(), password);
-
-      router.replace('/(tabs)/home');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '로그인에 실패했습니다. 다시 시도해 주세요.');
-    } finally {
-      setLoading(false);
-    }
+    mutate({ email: email.trim(), password });
   }
 
   return (
@@ -69,18 +68,16 @@ export function SignIn({ onSwitchToSignUp }: SignInProps) {
           onSubmitEditing={handleLogin}
         />
 
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-
         <Pressable
           style={({ pressed }) => [
             styles.button,
-            (!canSubmit || loading) && styles.buttonDisabled,
-            pressed && canSubmit && !loading && styles.buttonPressed,
+            (!canSubmit || isPending) && styles.buttonDisabled,
+            pressed && canSubmit && !isPending && styles.buttonPressed,
           ]}
           onPress={handleLogin}
-          disabled={!canSubmit || loading}
+          disabled={!canSubmit || isPending}
         >
-          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>로그인</Text>}
+          {isPending ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>로그인</Text>}
         </Pressable>
       </View>
 
