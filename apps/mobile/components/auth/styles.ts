@@ -49,6 +49,25 @@ export const authStyles = StyleSheet.create({
   buttonDisabled: {
     backgroundColor: '#9ca3af',
   },
+  secondaryButton: {
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
+  secondaryButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  verifiedEmail: {
+    fontSize: 16,
+    color: '#111827',
+    paddingVertical: 4,
+  },
   buttonText: {
     fontSize: 16,
     fontWeight: '600',

@@ -32,6 +32,15 @@ export class UsersService {
     return this.userModel.findOne({ email, status: USER_STATUS.ACTIVE }).exec();
   }
 
+  async existsActiveEmail(email: string): Promise<boolean> {
+    const user = await this.userModel
+      .findOne({ email: email.trim().toLowerCase(), status: USER_STATUS.ACTIVE })
+      .select('_id')
+      .exec();
+
+    return !!user;
+  }
+
   async create(createUserDto: CreateUserDto) {
     const email = createUserDto.email.trim().toLowerCase();
     const hashedPassword = await bcrypt.hash(createUserDto.password, BCRYPT_ROUNDS);

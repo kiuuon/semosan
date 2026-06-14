@@ -1,15 +1,31 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
 
 import { CurrentUser } from './decorators/current-user.decorator';
+import { EmailVerificationService } from './email-verification.service';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { SendEmailCodeDto } from './dto/send-email-code.dto';
+import { VerifyEmailCodeDto } from './dto/verify-email-code.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { User } from '../schemas/user.schema';
 import { AuthService } from './auth.service';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly emailVerificationService: EmailVerificationService,
+  ) {}
+
+  @Post('email/send-code')
+  sendEmailCode(@Body() dto: SendEmailCodeDto) {
+    return this.emailVerificationService.sendCode(dto.email);
+  }
+
+  @Post('email/verify-code')
+  verifyEmailCode(@Body() dto: VerifyEmailCodeDto) {
+    return this.emailVerificationService.verifyCode(dto.email, dto.code);
+  }
 
   @Post('login')
   login(@Body() loginDto: LoginDto) {

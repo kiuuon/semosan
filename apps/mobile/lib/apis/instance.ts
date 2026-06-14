@@ -10,7 +10,7 @@ async function getInstance(): Promise<AxiosInstance> {
     baseURL: process.env.EXPO_PUBLIC_SERVER_URL,
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${accessToken}`,
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
     },
   });
 
@@ -19,8 +19,10 @@ async function getInstance(): Promise<AxiosInstance> {
       return response;
     },
     async (error) => {
-      if (error.response.status === 401) {
-        if (error.response.data.errorCode === 'ACCESS_TOKEN_EXPIRED') {
+      const response = error.response;
+
+      if (response?.status === 401) {
+        if (response.data?.errorCode === 'ACCESS_TOKEN_EXPIRED') {
           try {
             const refreshToken = await getRefreshToken();
             if (!refreshToken) throw new Error('No refresh token');
@@ -43,7 +45,7 @@ async function getInstance(): Promise<AxiosInstance> {
           } catch (refreshError) {
             return Promise.reject(refreshError);
           }
-        } else if (error.response.data.errorCode === 'REFRESH_TOKEN_EXPIRED') {
+        } else if (response.data?.errorCode === 'REFRESH_TOKEN_EXPIRED') {
           await clearTokens();
 
           router.replace('/');
