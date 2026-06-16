@@ -1,5 +1,3 @@
-import axios from 'axios';
-
 import { clearTokens, getRefreshToken, setTokens } from '../utils/auth-storage';
 import getInstance from './instance';
 
@@ -12,19 +10,14 @@ export interface VerifyEmailCodeResponse {
   verificationToken: string;
 }
 
-const publicClient = axios.create({
-  baseURL: process.env.EXPO_PUBLIC_SERVER_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
 export async function sendEmailCode(email: string): Promise<void> {
-  await publicClient.post('/auth/email/send-code', { email: email.trim() });
+  const instance = await getInstance();
+  await instance.post('/auth/email/send-code', { email: email.trim() });
 }
 
 export async function verifyEmailCode(email: string, code: string): Promise<VerifyEmailCodeResponse> {
-  const response = await publicClient.post<VerifyEmailCodeResponse>('/auth/email/verify-code', {
+  const instance = await getInstance();
+  const response = await instance.post<VerifyEmailCodeResponse>('/auth/email/verify-code', {
     email: email.trim(),
     code,
   });

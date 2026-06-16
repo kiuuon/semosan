@@ -89,4 +89,13 @@ export const authStyles = StyleSheet.create({
     fontWeight: '600',
     color: '#111827',
   },
+  helperRow: {
+    marginTop: 8,
+    alignItems: 'flex-end',
+  },
+  helperLink: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#111827',
+  },
 });

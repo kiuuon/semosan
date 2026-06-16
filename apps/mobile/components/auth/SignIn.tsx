@@ -65,6 +65,12 @@ export function SignIn({ onSwitchToSignUp }: SignInProps) {
           onSubmitEditing={handleLogin}
         />
 
+        <View style={styles.helperRow}>
+          <Pressable onPress={() => router.push('/auth/forgot-password')} hitSlop={8}>
+            <Text style={styles.helperLink}>비밀번호 찾기</Text>
+          </Pressable>
+        </View>
+
         <Pressable
           style={({ pressed }) => [
             styles.button,
