@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View, Alert } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import { useMutation } from '@tanstack/react-query';
 
@@ -18,9 +18,6 @@ export function SignIn({ onSwitchToSignUp }: SignInProps) {
     mutationFn: ({ email, password }: { email: string; password: string }) => login(email, password),
     onSuccess: () => {
       router.replace('/(tabs)/home');
-    },
-    onError: () => {
-      Alert.alert('로그인에 실패했습니다. 다시 시도해 주세요.');
     },
   });
 

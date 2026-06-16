@@ -8,7 +8,7 @@ import {
   EMAIL_CODE_LENGTH,
   EMAIL_CODE_RESEND_COOLDOWN_MS,
   EMAIL_VERIFICATION_TOKEN_EXPIRES_MS,
-} from '../lib/constants/email-verification';
+} from '../common/constants/email-verification';
 import { MailService } from '../mail/mail.service';
 import { EmailVerification, EmailVerificationDocument } from '../schemas/email-verification.schema';
 import { UsersService } from '../users/users.service';
