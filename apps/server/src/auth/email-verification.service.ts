@@ -12,6 +12,7 @@ import {
 import { MailService } from '../mail/mail.service';
 import { EmailVerification, EmailVerificationDocument } from '../schemas/email-verification.schema';
 import { UsersService } from '../users/users.service';
+import { EmailVerificationType } from './types/email-verification-type';
 
 export type VerifyEmailCodeResponse = {
   verificationToken: string;
@@ -26,14 +27,20 @@ export class EmailVerificationService {
     private readonly usersService: UsersService,
   ) {}
 
-  async sendCode(email: string): Promise<{ message: string }> {
+  async sendCode(email: string, type: EmailVerificationType): Promise<{ message: string }> {
     const normalizedEmail = email.trim().toLowerCase();
 
-    if (await this.usersService.existsActiveEmail(normalizedEmail)) {
+    const exists = await this.usersService.existsActiveEmail(normalizedEmail);
+
+    if (type === EmailVerificationType.SIGNUP && exists) {
       throw new ConflictException('이미 사용 중인 이메일입니다.');
     }
 
-    const existing = await this.emailVerificationModel.findOne({ email: normalizedEmail }).exec();
+    if (type === EmailVerificationType.PASSWORD_RESET && !exists) {
+      throw new BadRequestException('가입되지 않은 이메일입니다.');
+    }
+
+    const existing = await this.emailVerificationModel.findOne({ email: normalizedEmail, type }).exec();
 
     if (existing?.lastSentAt) {
       const elapsed = Date.now() - existing.lastSentAt.getTime();
@@ -48,9 +55,10 @@ export class EmailVerificationService {
     const now = new Date();
 
     await this.emailVerificationModel.findOneAndUpdate(
-      { email: normalizedEmail },
+      { email: normalizedEmail, type },
       {
         email: normalizedEmail,
+        type,
         codeHash: this.hashValue(code),
         codeExpiresAt: new Date(now.getTime() + EMAIL_CODE_EXPIRES_MS),
         verified: false,
@@ -66,9 +74,9 @@ export class EmailVerificationService {
     return { message: '인증 코드를 발송했습니다.' };
   }
 
-  async verifyCode(email: string, code: string): Promise<VerifyEmailCodeResponse> {
+  async verifyCode(email: string, type: EmailVerificationType, code: string): Promise<VerifyEmailCodeResponse> {
     const normalizedEmail = email.trim().toLowerCase();
-    const record = await this.emailVerificationModel.findOne({ email: normalizedEmail }).exec();
+    const record = await this.emailVerificationModel.findOne({ email: normalizedEmail, type }).exec();
 
     if (!record) {
       throw new BadRequestException('인증 코드를 먼저 요청해 주세요.');
@@ -92,9 +100,9 @@ export class EmailVerificationService {
     return { verificationToken };
   }
 
-  async validateAndConsumeToken(email: string, verificationToken: string): Promise<void> {
+  async validateAndConsumeToken(email: string, type: EmailVerificationType, verificationToken: string): Promise<void> {
     const normalizedEmail = email.trim().toLowerCase();
-    const record = await this.emailVerificationModel.findOne({ email: normalizedEmail }).exec();
+    const record = await this.emailVerificationModel.findOne({ email: normalizedEmail, type }).exec();
 
     if (!record?.verified || !record.verificationTokenHash || !record.tokenExpiresAt) {
       throw new BadRequestException('이메일 인증이 필요합니다.');
@@ -108,7 +116,7 @@ export class EmailVerificationService {
       throw new BadRequestException('유효하지 않은 이메일 인증입니다.');
     }
 
-    await this.emailVerificationModel.deleteOne({ email: normalizedEmail }).exec();
+    await this.emailVerificationModel.deleteOne({ email: normalizedEmail, type }).exec();
   }
 
   private generateCode(): string {

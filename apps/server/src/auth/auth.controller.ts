@@ -9,22 +9,37 @@ import { VerifyEmailCodeDto } from './dto/verify-email-code.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { User } from '../schemas/user.schema';
 import { AuthService } from './auth.service';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import { UsersService } from '../users/users.service';
+import { EmailVerificationType } from './types/email-verification-type';
 
 @Controller('auth')
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly emailVerificationService: EmailVerificationService,
+    private readonly usersService: UsersService,
   ) {}
 
   @Post('email/send-code')
   sendEmailCode(@Body() dto: SendEmailCodeDto) {
-    return this.emailVerificationService.sendCode(dto.email);
+    return this.emailVerificationService.sendCode(dto.email, dto.type);
   }
 
   @Post('email/verify-code')
   verifyEmailCode(@Body() dto: VerifyEmailCodeDto) {
-    return this.emailVerificationService.verifyCode(dto.email, dto.code);
+    return this.emailVerificationService.verifyCode(dto.email, dto.type, dto.code);
+  }
+
+  @Post('password/reset')
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    await this.emailVerificationService.validateAndConsumeToken(
+      dto.email,
+      EmailVerificationType.PASSWORD_RESET,
+      dto.verificationToken,
+    );
+    await this.usersService.resetPassword(dto.email, dto.newPassword);
+    return { message: '비밀번호가 변경되었습니다.' };
   }
 
   @Post('login')

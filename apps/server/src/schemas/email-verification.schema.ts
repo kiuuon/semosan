@@ -1,12 +1,17 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
 
+import { EmailVerificationType } from '../auth/types/email-verification-type';
+
 export type EmailVerificationDocument = HydratedDocument<EmailVerification>;
 
 @Schema({ timestamps: true })
 export class EmailVerification {
-  @Prop({ required: true, lowercase: true, trim: true, unique: true })
+  @Prop({ required: true, lowercase: true, trim: true })
   email: string;
+
+  @Prop({ required: true, type: String, enum: EmailVerificationType })
+  type: EmailVerificationType;
 
   @Prop({ required: true })
   codeHash: string;
@@ -28,3 +33,10 @@ export class EmailVerification {
 }
 
 export const EmailVerificationSchema = SchemaFactory.createForClass(EmailVerification);
+
+EmailVerificationSchema.index(
+  { email: 1, type: 1 },
+  {
+    unique: true,
+  },
+);

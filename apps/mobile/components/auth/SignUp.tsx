@@ -22,7 +22,7 @@ export function SignUp({ onSwitchToSignIn }: SignUpProps) {
   const [passwordConfirm, setPasswordConfirm] = useState('');
 
   const { mutate: sendCode, isPending: isSendingCode } = useMutation({
-    mutationFn: () => sendEmailCode(email),
+    mutationFn: () => sendEmailCode(email, 'SIGNUP'),
     onSuccess: () => {
       setCodeSent(true);
       Alert.alert('인증 코드를 발송했습니다.', '메일함에서 6자리 코드를 확인해 주세요.');
@@ -30,7 +30,7 @@ export function SignUp({ onSwitchToSignIn }: SignUpProps) {
   });
 
   const { mutate: verifyCode, isPending: isVerifyingCode } = useMutation({
-    mutationFn: () => verifyEmailCode(email, code),
+    mutationFn: () => verifyEmailCode(email, code, 'SIGNUP'),
     onSuccess: (data) => {
       setVerificationToken(data.verificationToken);
       setStep('password');

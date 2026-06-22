@@ -1,4 +1,4 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import * as bcrypt from 'bcrypt';
 import { Model, Types } from 'mongoose';
@@ -60,5 +60,23 @@ export class UsersService {
     });
 
     return user;
+  }
+
+  async resetPassword(email: string, newPassword: string): Promise<void> {
+    const normalizedEmail = email.trim().toLowerCase();
+    const hashedPassword = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
+
+    const result = await this.userModel
+      .updateOne(
+        { email: normalizedEmail, status: USER_STATUS.ACTIVE },
+        {
+          $set: { password: hashedPassword },
+        },
+      )
+      .exec();
+
+    if (!result.matchedCount) {
+      throw new BadRequestException('가입되지 않은 이메일입니다.');
+    }
   }
 }
