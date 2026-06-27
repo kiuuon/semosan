@@ -1,5 +1,3 @@
-import axios from 'axios';
-
 import { clearTokens, getRefreshToken, setTokens } from '../utils/auth-storage';
 import getInstance from './instance';
 
@@ -12,23 +10,34 @@ export interface VerifyEmailCodeResponse {
   verificationToken: string;
 }
 
-const publicClient = axios.create({
-  baseURL: process.env.EXPO_PUBLIC_SERVER_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
+export type EmailVerificationType = 'SIGNUP' | 'PASSWORD_RESET';
 
-export async function sendEmailCode(email: string): Promise<void> {
-  await publicClient.post('/auth/email/send-code', { email: email.trim() });
+export async function sendEmailCode(email: string, type: EmailVerificationType = 'SIGNUP'): Promise<void> {
+  const instance = await getInstance();
+  await instance.post('/auth/email/send-code', { email: email.trim(), type });
 }
 
-export async function verifyEmailCode(email: string, code: string): Promise<VerifyEmailCodeResponse> {
-  const response = await publicClient.post<VerifyEmailCodeResponse>('/auth/email/verify-code', {
+export async function verifyEmailCode(
+  email: string,
+  code: string,
+  type: EmailVerificationType = 'SIGNUP',
+): Promise<VerifyEmailCodeResponse> {
+  const instance = await getInstance();
+  const response = await instance.post<VerifyEmailCodeResponse>('/auth/email/verify-code', {
     email: email.trim(),
+    type,
     code,
   });
   return response.data;
+}
+
+export async function resetPassword(email: string, verificationToken: string, newPassword: string): Promise<void> {
+  const instance = await getInstance();
+  await instance.post('/auth/password/reset', {
+    email: email.trim(),
+    verificationToken,
+    newPassword,
+  });
 }
 
 export async function signUp(email: string, password: string, verificationToken: string): Promise<AuthTokensResponse> {
@@ -47,26 +56,6 @@ export async function signUp(email: string, password: string, verificationToken:
 export async function login(email: string, password: string): Promise<AuthTokensResponse> {
   const instance = await getInstance();
   const response = await instance.post('/auth/login', { email, password });
-
-  const data = response.data as AuthTokensResponse;
-  await setTokens(data.accessToken, data.refreshToken);
-  return data;
-}
-
-export async function refreshSession(): Promise<AuthTokensResponse | null> {
-  const refreshToken = await getRefreshToken();
-
-  if (!refreshToken) {
-    return null;
-  }
-
-  const instance = await getInstance();
-  const response = await instance.post('/auth/refresh', { refreshToken });
-
-  if (response.status !== 200) {
-    await clearTokens();
-    return null;
-  }
 
   const data = response.data as AuthTokensResponse;
   await setTokens(data.accessToken, data.refreshToken);
