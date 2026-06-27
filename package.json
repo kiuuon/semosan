@@ -17,7 +17,6 @@
     "typecheck": "pnpm -r typecheck",
     "dev:server": "pnpm --filter @semoasn/server dev",
     "dev:mobile": "pnpm --filter @semoasn/mobile start",
-    "test": "pnpm -r --filter @semoasn/server --filter @semoasn/mobile test",
     "test:server": "pnpm --filter @semoasn/server test",
     "test:mobile": "pnpm --filter @semoasn/mobile test",
     "format": "pnpm -w prettier . --write",
