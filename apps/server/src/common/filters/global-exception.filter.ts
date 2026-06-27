@@ -8,8 +8,8 @@ export class GlobalExceptionFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
-    const { statusCode, message } = this.resolveException(exception);
-    console.log(statusCode, message);
+    const { statusCode, message, errorCode } = this.resolveException(exception);
+
     if (statusCode >= HttpStatus.INTERNAL_SERVER_ERROR) {
       this.logger.error(exception);
     }
@@ -17,10 +17,15 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     response.status(statusCode).json({
       statusCode,
       message,
+      ...(errorCode ? { errorCode } : {}),
     });
   }
 
-  private resolveException(exception: unknown): { statusCode: number; message: string } {
+  private resolveException(exception: unknown): {
+    statusCode: number;
+    message: string;
+    errorCode?: string;
+  } {
     if (exception instanceof HttpException) {
       const statusCode = exception.getStatus();
       const exceptionResponse = exception.getResponse();
@@ -30,10 +35,14 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       }
 
       if (typeof exceptionResponse === 'object' && exceptionResponse !== null) {
-        const body = exceptionResponse as { message?: string | string[] };
+        const body = exceptionResponse as {
+          message?: string | string[];
+          errorCode?: string;
+        };
         return {
           statusCode,
           message: this.normalizeMessage(body.message ?? exception.message),
+          ...(body.errorCode ? { errorCode: body.errorCode } : {}),
         };
       }
 
