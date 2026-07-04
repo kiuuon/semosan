@@ -1,10 +1,15 @@
 import { Text, type TextProps, type TextStyle } from 'react-native';
+import colors from '../../lib/constants/colors';
 
-type TypographyProps = TextProps;
+type ColorType = (typeof colors)[keyof typeof colors];
+
+interface TypographyProps extends TextProps {
+  color?: ColorType;
+}
 
 function createTypography(variantStyle: TextStyle, displayName: string) {
-  function TypographyVariant({ style, ...props }: TypographyProps) {
-    return <Text allowFontScaling={false} style={[variantStyle, style]} {...props} />;
+  function TypographyVariant({ style, color = colors.stone900, ...props }: TypographyProps) {
+    return <Text allowFontScaling={false} style={[variantStyle, style, { color }]} {...props} />;
   }
 
   TypographyVariant.displayName = `Typography.${displayName}`;

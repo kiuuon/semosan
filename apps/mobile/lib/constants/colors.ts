@@ -1,19 +1,19 @@
 const colors = {
-  // Green
-  green900: '#1B4332', // 진한 텍스트, 헤더
-  green700: '#2D6A4F', // Primary 버튼, 링크
-  green500: '#52B788', // 아이콘, 활성 상태
-  green300: '#95C4A8', // 서브 텍스트, 레이블
-  green100: '#D8EDDF', // 배지, 칩 배경
-  green50: '#F0F8F3', // 섹션 배경, 호버
+  // Forest
+  forest900: '#1B4332', // 진한 텍스트, 헤더
+  forest700: '#2D6A4F', // Primary 버튼, 링크
+  forest500: '#52B788', // 아이콘, 활성 상태
+  forest300: '#95C4A8', // 서브 텍스트, 레이블
+  forest100: '#D8EDDF', // 배지, 칩 배경
+  forest50: '#F0F8F3', // 섹션 배경, 호버
 
-  // Orange
-  orange900: '#7D3412', // 진한 강조 텍스트
-  orange700: '#C2501C', // 경고, 강조 포인트
-  orange500: '#E07B39', // Accent 버튼, CTA
-  orange300: '#F4A261', // 태그, 배지
-  orange100: '#FAD9C2', // 배지 배경
-  orange50: '#FEF3EC', // 알림 배경
+  // Summit
+  summit900: '#7D3412', // 진한 강조 텍스트
+  summit700: '#C2501C', // 경고, 강조 포인트
+  summit500: '#E07B39', // Accent 버튼, CTA
+  summit300: '#F4A261', // 태그, 배지
+  summit100: '#FAD9C2', // 배지 배경
+  summit50: '#FEF3EC', // 알림 배경
 
   // Sky
   sky900: '#1E3A5F', // 날씨 텍스트
