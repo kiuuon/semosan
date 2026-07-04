@@ -1,9 +1,10 @@
-import { View, Text } from 'react-native';
+import { View } from 'react-native';
+import Typography from '../../../components/common/Typography';
 
 function Home() {
   return (
     <View>
-      <Text>Home</Text>
+      <Typography.DataMono>1,708m</Typography.DataMono>
     </View>
   );
 }
