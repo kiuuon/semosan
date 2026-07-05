@@ -8,8 +8,10 @@ interface TypographyProps extends TextProps {
 }
 
 function createTypography(variantStyle: TextStyle, displayName: string) {
-  function TypographyVariant({ style, color = colors.stone900, ...props }: TypographyProps) {
-    return <Text allowFontScaling={false} style={[variantStyle, style, { color }]} {...props} />;
+  function TypographyVariant({ style, color, ...props }: TypographyProps) {
+    return (
+      <Text allowFontScaling={false} style={[variantStyle, { color: color ?? colors.stone900 }, style]} {...props} />
+    );
   }
 
   TypographyVariant.displayName = `Typography.${displayName}`;

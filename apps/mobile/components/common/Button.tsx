@@ -35,6 +35,7 @@ function Button({
   };
   return (
     <TouchableOpacity
+      testID="button"
       disabled={disabled || loading}
       style={[
         styles.base,
