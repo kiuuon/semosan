@@ -56,7 +56,7 @@ const Input = ({
           <Pressable style={styles.secureToggle} onPress={() => setIsSecureTextVisible((prev) => !prev)} hitSlop={8}>
             <MaterialIcons
               name={isSecureTextVisible ? 'visibility' : 'visibility-off'}
-              size={20}
+              size={16}
               color={colors.stone500}
             />
           </Pressable>
