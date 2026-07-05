@@ -46,10 +46,9 @@ function Button({
       ]}
       onPress={onPress}
     >
+      {loading && <ActivityIndicator size="small" color={colors.white} />}
       {leftIcon && <View style={styles.icon}>{leftIcon}</View>}
-      <Typography.BodyBase color={textColorVariant[variant]}>
-        {loading ? <ActivityIndicator size="small" color={colors.white} /> : children}
-      </Typography.BodyBase>
+      <Typography.BodyBase color={textColorVariant[variant]}>{children}</Typography.BodyBase>
       {rightIcon && <View style={styles.icon}>{rightIcon}</View>}
     </TouchableOpacity>
   );
