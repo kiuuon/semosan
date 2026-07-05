@@ -90,10 +90,10 @@ const Typography = {
   /** 배지, 태그, 상태 레이블 */
   Label: createTypography(
     {
-      fontFamily: 'NotoSansKR_600SemiBold',
-      fontSize: 10,
-      lineHeight: 10 * 1.4,
-      letterSpacing: 10 * 0.1,
+      fontFamily: 'NotoSansKR_500Medium',
+      fontSize: 12,
+      lineHeight: 12 * 1.4,
+      letterSpacing: 12 * 0.1,
     },
     'Label',
   ),
