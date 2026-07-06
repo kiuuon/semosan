@@ -5,10 +5,11 @@ import { useMutation } from '@tanstack/react-query';
 
 import { sendEmailCode, signUp, verifyEmailCode } from '../../../lib/apis/auth';
 import { authStyles as styles } from '../styles';
+import ProgressBar from '../../common/ProgressBar/ProgressBar';
 
-type SignUpProps = {
+interface SignUpProps {
   onSwitchToSignIn: () => void;
-};
+}
 
 type SignUpStep = 'email' | 'password';
 
@@ -78,6 +79,7 @@ export function SignUp({ onSwitchToSignIn }: SignUpProps) {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
+        <ProgressBar totalSteps={3} currentStep={1} currentStepName="이메일 인증" />
         <Text style={styles.subtitle}>이메일 인증 후 계정을 만드세요</Text>
 
         <View style={styles.form}>
