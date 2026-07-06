@@ -3,8 +3,8 @@ import { ActivityIndicator, Alert, Keyboard, Pressable, ScrollView, Text, TextIn
 import { useMutation } from '@tanstack/react-query';
 import { router } from 'expo-router';
 
-import { resetPassword, sendEmailCode, verifyEmailCode } from '../../lib/apis/auth';
-import { authStyles as styles } from './styles';
+import { resetPassword, sendEmailCode, verifyEmailCode } from '../../../lib/apis/auth';
+import { authStyles as styles } from '../styles';
 
 type ForgotPasswordStep = 'email' | 'code' | 'password';
 

@@ -3,8 +3,8 @@ import { ActivityIndicator, Alert, Pressable, ScrollView, Text, TextInput, View 
 import { router } from 'expo-router';
 import { useMutation } from '@tanstack/react-query';
 
-import { sendEmailCode, signUp, verifyEmailCode } from '../../lib/apis/auth';
-import { authStyles as styles } from './styles';
+import { sendEmailCode, signUp, verifyEmailCode } from '../../../lib/apis/auth';
+import { authStyles as styles } from '../styles';
 
 type SignUpProps = {
   onSwitchToSignIn: () => void;

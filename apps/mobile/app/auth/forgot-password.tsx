@@ -1,8 +1,8 @@
 import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 
-import { ForgotPassword } from '../../components/auth/ForgotPassword';
-import { AuthHeader } from '../../components/auth/AuthHeader';
+import { ForgotPassword } from '../../components/auth/ForgotPassword/ForgotPassword';
+import { AuthHeader } from '../../components/auth/AuthHeader/AuthHeader';
 
 export default function ForgotPasswordScreen() {
   return (

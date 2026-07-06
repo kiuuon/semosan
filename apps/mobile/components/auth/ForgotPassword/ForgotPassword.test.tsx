@@ -2,8 +2,8 @@ import { Alert } from 'react-native';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
-import { resetPassword, sendEmailCode, verifyEmailCode } from '../../lib/apis/auth';
-import { renderWithProviders } from '../../test-utils/render';
+import { resetPassword, sendEmailCode, verifyEmailCode } from '../../../lib/apis/auth';
+import { renderWithProviders } from '../../../test-utils/render';
 import { ForgotPassword } from './ForgotPassword';
 
 jest.mock('expo-router', () => ({
@@ -14,7 +14,7 @@ jest.mock('expo-router', () => ({
   },
 }));
 
-jest.mock('../../lib/apis/auth', () => ({
+jest.mock('../../../lib/apis/auth', () => ({
   sendEmailCode: jest.fn(),
   verifyEmailCode: jest.fn(),
   resetPassword: jest.fn(),

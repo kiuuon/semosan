@@ -1,8 +1,8 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
-import { login } from '../../lib/apis/auth';
-import { renderWithProviders } from '../../test-utils/render';
+import { login } from '../../../lib/apis/auth';
+import { renderWithProviders } from '../../../test-utils/render';
 import { SignIn } from './SignIn';
 
 jest.mock('expo-router', () => ({
@@ -13,7 +13,7 @@ jest.mock('expo-router', () => ({
   },
 }));
 
-jest.mock('../../lib/apis/auth', () => ({
+jest.mock('../../../lib/apis/auth', () => ({
   login: jest.fn(),
 }));
 

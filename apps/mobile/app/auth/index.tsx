@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
-import { AuthHeader } from '../../components/auth/AuthHeader';
-import { SignIn } from '../../components/auth/SignIn';
-import { SignUp } from '../../components/auth/SignUp';
+
+import Header from '../../components/common/Header/Header';
+import { SignIn } from '../../components/auth/SignIn/SignIn';
+import { SignUp } from '../../components/auth/SignUp/SignUp';
 
 type AuthMode = 'signIn' | 'signUp';
 
@@ -25,7 +26,7 @@ export default function AuthScreen() {
 
   return (
     <View style={styles.container}>
-      <AuthHeader title={isSignUp ? '회원가입' : '로그인'} onBack={handleBack} />
+      <Header title={isSignUp ? '회원가입' : '로그인'} onBack={handleBack} />
 
       <KeyboardAvoidingView style={styles.body} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         {isSignUp ? (

@@ -1,7 +1,7 @@
 import { TouchableOpacity, StyleSheet, View, ActivityIndicator } from 'react-native';
 
-import Typography from './Typography';
-import colors from '../../lib/constants/colors';
+import Typography from '../Typography/Typography';
+import colors from '../../../lib/constants/colors';
 
 interface ButtonProps {
   variant: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';

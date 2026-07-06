@@ -1,5 +1,5 @@
 import { Text, type TextProps, type TextStyle } from 'react-native';
-import colors from '../../lib/constants/colors';
+import colors from '../../../lib/constants/colors';
 
 type ColorType = (typeof colors)[keyof typeof colors];
 
