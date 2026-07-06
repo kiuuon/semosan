@@ -4,8 +4,8 @@ import Typography from '../Typography/Typography';
 import colors from '../../../lib/constants/colors';
 
 interface ButtonProps {
-  variant: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
-  size: 'sm' | 'md' | 'lg';
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
+  size?: 'sm' | 'md' | 'lg';
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
   loading?: boolean;

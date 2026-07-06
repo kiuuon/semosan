@@ -59,7 +59,7 @@ export default function RootLayout() {
           <Stack screenOptions={{ headerShown: false }} />
         </SafeAreaView>
       </SafeAreaProvider>
-      <Toast />
+      <Toast position="top" topOffset={75} />
     </QueryClientProvider>
   );
 }

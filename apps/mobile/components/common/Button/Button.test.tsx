@@ -73,7 +73,7 @@ describe('Button', () => {
     expect(screen.getByText('확인')).toBeOnTheScreen();
   });
 
-  it('loading이면 텍스트를 숨기고 비활성화한다', async () => {
+  it('loading이면 ActivityIndicator를 표시하고 비활성화한다', async () => {
     const onPress = jest.fn();
 
     await render(
@@ -82,7 +82,7 @@ describe('Button', () => {
       </Button>,
     );
 
-    expect(screen.queryByText('확인')).toBeNull();
+    expect(screen.getByText('확인')).toBeOnTheScreen();
     expect(screen.getByTestId('button')).toBeDisabled();
     expect(screen.getByTestId('button')).toHaveStyle({ opacity: 0.4 });
 

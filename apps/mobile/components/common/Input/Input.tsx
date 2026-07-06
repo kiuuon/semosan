@@ -53,7 +53,13 @@ const Input = ({
           value={value}
         />
         {secureTextEntry ? (
-          <Pressable style={styles.secureToggle} onPress={() => setIsSecureTextVisible((prev) => !prev)} hitSlop={8}>
+          <Pressable
+            style={styles.secureToggle}
+            onPress={() => setIsSecureTextVisible((prev) => !prev)}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={isSecureTextVisible ? '비밀번호 숨기기' : '비밀번호 표시'}
+          >
             <MaterialIcons
               name={isSecureTextVisible ? 'visibility' : 'visibility-off'}
               size={16}
@@ -63,11 +69,13 @@ const Input = ({
         ) : null}
         {accessoryRight ? <View style={styles.accessoryRight}>{accessoryRight}</View> : null}
       </View>
-      <Typography.Caption
-        color={status === 'error' ? colors.danger : status === 'active' ? colors.forest700 : colors.stone900}
-      >
-        {caption}
-      </Typography.Caption>
+      {caption && (
+        <Typography.Caption
+          color={status === 'error' ? colors.danger : status === 'active' ? colors.forest700 : colors.stone900}
+        >
+          {caption}
+        </Typography.Caption>
+      )}
     </View>
   );
 };

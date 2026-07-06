@@ -26,7 +26,8 @@ describe('SignIn', () => {
   it('로그인 화면을 표시한다', async () => {
     await renderWithProviders(<SignIn onSwitchToSignUp={jest.fn()} />);
 
-    expect(screen.getByText('계정으로 로그인하세요')).toBeOnTheScreen();
+    expect(screen.getByText('세모산')).toBeOnTheScreen();
+    expect(screen.getByText('산을 오르는 모든 순간을 함께')).toBeOnTheScreen();
     expect(screen.getByText('로그인')).toBeOnTheScreen();
   });
 
@@ -39,8 +40,8 @@ describe('SignIn', () => {
   it('이메일과 비밀번호를 입력하면 로그인 API를 호출한다', async () => {
     await renderWithProviders(<SignIn onSwitchToSignUp={jest.fn()} />);
 
-    await fireEvent.changeText(screen.getByPlaceholderText('name@example.com'), '  test@example.com  ');
-    await fireEvent.changeText(screen.getByPlaceholderText('비밀번호 입력'), 'password123');
+    await fireEvent.changeText(screen.getByPlaceholderText('example@email.com'), '  test@example.com  ');
+    await fireEvent.changeText(screen.getByPlaceholderText('비밀번호를 입력하세요'), 'password123');
     await fireEvent.press(screen.getByText('로그인'));
 
     await waitFor(() => {
@@ -51,8 +52,8 @@ describe('SignIn', () => {
   it('로그인 성공 시 홈 화면으로 이동한다', async () => {
     await renderWithProviders(<SignIn onSwitchToSignUp={jest.fn()} />);
 
-    await fireEvent.changeText(screen.getByPlaceholderText('name@example.com'), 'test@example.com');
-    await fireEvent.changeText(screen.getByPlaceholderText('비밀번호 입력'), 'password123');
+    await fireEvent.changeText(screen.getByPlaceholderText('example@email.com'), 'test@example.com');
+    await fireEvent.changeText(screen.getByPlaceholderText('비밀번호를 입력하세요'), 'password123');
     await fireEvent.press(screen.getByText('로그인'));
 
     await waitFor(() => {
