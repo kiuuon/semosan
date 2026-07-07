@@ -3,7 +3,7 @@ import { router } from 'expo-router';
 
 import { login } from '../../../lib/apis/auth';
 import { renderWithProviders } from '../../../test-utils/render';
-import { SignIn } from './SignIn';
+import SignIn from './SignIn';
 
 jest.mock('expo-router', () => ({
   router: {

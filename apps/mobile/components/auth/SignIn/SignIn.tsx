@@ -13,7 +13,7 @@ interface SignInProps {
   onSwitchToSignUp: () => void;
 }
 
-export function SignIn({ onSwitchToSignUp }: SignInProps) {
+function SignIn({ onSwitchToSignUp }: SignInProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -119,3 +119,5 @@ const styles = StyleSheet.create({
     backgroundColor: colors.stone300,
   },
 });
+
+export default SignIn;
