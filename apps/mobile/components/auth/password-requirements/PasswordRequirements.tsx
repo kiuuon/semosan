@@ -1,6 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 
-import Typography from '../../common/Typography/Typography';
+import Typography from '../../common/typography/Typography';
 import colors from '../../../lib/constants/colors';
 
 interface PasswordRequirementsProps {

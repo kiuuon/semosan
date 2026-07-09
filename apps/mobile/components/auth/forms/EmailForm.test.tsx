@@ -25,7 +25,7 @@ function TestEmailForm() {
 
   return (
     <>
-      <EmailForm email={email} setEmail={setEmail} setStep={setStep} />
+      <EmailForm type="SIGNUP" email={email} setEmail={setEmail} setStep={setStep} />
       {step ? <Text>{step}</Text> : null}
     </>
   );

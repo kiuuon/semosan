@@ -3,29 +3,45 @@ import { StyleSheet, View } from 'react-native';
 import { useMutation } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 
-import Typography from '../../common/Typography/Typography';
+import Typography from '../../common/typography/Typography';
 import colors from '../../../lib/constants/colors';
-import { sendEmailCode } from '../../../lib/apis/auth';
-import Button from '../../common/Button/Button';
-import Input from '../../common/Input/Input';
+import { EmailVerificationType, sendEmailCode } from '../../../lib/apis/auth';
+import Button from '../../common/button/Button';
+import Input from '../../common/input/Input';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const FORM_COPY: Record<EmailVerificationType, { title: string; description: string; submit: string }> = {
+  SIGNUP: {
+    title: '이메일 인증',
+    description: '사용할 이메일 주소를 입력하면 6자리 인증 코드를 보내드릴게요.',
+    submit: '인증 코드 보내기',
+  },
+  PASSWORD_RESET: {
+    title: '이메일 확인',
+    description: '가입할 때 사용한 이메일을 입력하면 6자리 인증 코드를 보내드릴게요.',
+    submit: '인증 코드 보내기',
+  },
+};
 
 function isValidEmail(email: string) {
   return EMAIL_PATTERN.test(email.trim());
 }
 
 interface EmailFormProps {
+  type: EmailVerificationType;
   email: string;
   setEmail: (email: string) => void;
   setStep: (step: 'email-verification') => void;
 }
 
-function EmailForm({ email, setEmail, setStep }: EmailFormProps) {
+function EmailForm({ type, email, setEmail, setStep }: EmailFormProps) {
   const [emailError, setEmailError] = useState<string | null>(null);
 
+  const copy = FORM_COPY[type];
+
   const { mutate: sendCode, isPending: isSendingCode } = useMutation({
-    mutationFn: () => sendEmailCode(email.trim(), 'SIGNUP'),
+    mutationFn: () => sendEmailCode(email.trim(), type),
     onSuccess: () => {
       setStep('email-verification');
     },
@@ -53,8 +69,8 @@ function EmailForm({ email, setEmail, setStep }: EmailFormProps) {
     <View style={styles.container}>
       <View style={styles.contentContainer}>
         <View style={styles.titleContainer}>
-          <Typography.Display>이메일 인증</Typography.Display>
-          <Typography.BodyBase>사용할 이메일 주소를 입력하면 {'\n'}6자리 인증 코드를 보내드릴게요.</Typography.BodyBase>
+          <Typography.Display>{copy.title}</Typography.Display>
+          <Typography.BodyBase>{copy.description}</Typography.BodyBase>
         </View>
 
         <Input
@@ -69,7 +85,7 @@ function EmailForm({ email, setEmail, setStep }: EmailFormProps) {
       </View>
 
       <Button onPress={handleSendCode} disabled={!email.trim() || isSendingCode} loading={isSendingCode} fullWidth>
-        인증 코드 보내기
+        {copy.submit}
       </Button>
     </View>
   );

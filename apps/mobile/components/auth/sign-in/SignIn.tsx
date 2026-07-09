@@ -5,15 +5,16 @@ import { useMutation } from '@tanstack/react-query';
 
 import { login } from '../../../lib/apis/auth';
 import colors from '../../../lib/constants/colors';
-import Typography from '../../common/Typography/Typography';
-import Input from '../../common/Input/Input';
-import Button from '../../common/Button/Button';
+import Typography from '../../common/typography/Typography';
+import Input from '../../common/input/Input';
+import Button from '../../common/button/Button';
 
 interface SignInProps {
   onSwitchToSignUp: () => void;
+  onSwitchToFindPassword: () => void;
 }
 
-function SignIn({ onSwitchToSignUp }: SignInProps) {
+function SignIn({ onSwitchToSignUp, onSwitchToFindPassword }: SignInProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -61,7 +62,7 @@ function SignIn({ onSwitchToSignUp }: SignInProps) {
           <Typography.BodyMedium color={colors.forest900}>회원가입</Typography.BodyMedium>
         </TouchableOpacity>
         <View style={styles.footerSeparator} />
-        <TouchableOpacity onPress={() => router.push('/auth/forgot-password')} hitSlop={8}>
+        <TouchableOpacity onPress={onSwitchToFindPassword} hitSlop={8}>
           <Typography.BodyBase color={colors.stone500}>비밀번호 찾기</Typography.BodyBase>
         </TouchableOpacity>
       </View>

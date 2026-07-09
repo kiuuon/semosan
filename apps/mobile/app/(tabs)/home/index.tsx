@@ -1,8 +1,8 @@
 import { View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import Typography from '../../../components/common/Typography/Typography';
-import Button from '../../../components/common/Button/Button';
+import Typography from '../../../components/common/typography/Typography';
+import Button from '../../../components/common/button/Button';
 
 function Home() {
   return (

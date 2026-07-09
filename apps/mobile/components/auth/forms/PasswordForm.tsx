@@ -1,36 +1,59 @@
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { router } from 'expo-router';
 import { useMutation } from '@tanstack/react-query';
 import Toast from 'react-native-toast-message';
 
-import Typography from '../../common/Typography/Typography';
-import { signUp } from '../../../lib/apis/auth';
-import Button from '../../common/Button/Button';
-import Input from '../../common/Input/Input';
-import PasswordRequirements from '../PasswordRequirements/PasswordRequirements';
+import Typography from '../../common/typography/Typography';
+import { EmailVerificationType, resetPassword, signUp } from '../../../lib/apis/auth';
+import Button from '../../common/button/Button';
+import Input from '../../common/input/Input';
+import PasswordRequirements from '../password-requirements/PasswordRequirements';
+
+const FORM_COPY: Record<EmailVerificationType, { title: string; description: string; submit: string }> = {
+  SIGNUP: {
+    title: '비밀번호 설정',
+    description: '세모산에서 사용할 비밀번호를 설정해주세요.',
+    submit: '회원가입 완료',
+  },
+  PASSWORD_RESET: {
+    title: '새 비밀번호',
+    description: '새롭게 사용할 비밀번호를 입력해주세요.',
+    submit: '비밀번호 변경 완료',
+  },
+};
 
 interface PasswordFormProps {
+  type: EmailVerificationType;
   email: string;
   verificationToken: string | null;
+  onComplete: () => void;
 }
 
-function PasswordForm({ email, verificationToken }: PasswordFormProps) {
+function PasswordForm({ type, email, verificationToken, onComplete }: PasswordFormProps) {
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
+
+  const copy = FORM_COPY[type];
 
   const hasMinLength = password.length >= 8;
   const hasLetter = /[a-zA-Z]/.test(password);
   const hasNumber = /[0-9]/.test(password);
 
-  const { mutate: register, isPending: isRegistering } = useMutation({
-    mutationFn: () => signUp(email, password, verificationToken as string),
+  const { mutate: submit, isPending: isSubmitting } = useMutation({
+    mutationFn: async () => {
+      if (type === 'SIGNUP') {
+        await signUp(email, password, verificationToken as string);
+        return;
+      }
+
+      await resetPassword(email, verificationToken as string, password);
+    },
     onSuccess: () => {
-      router.replace('/(tabs)/home');
+      onComplete();
     },
   });
 
-  function handleSignUp() {
+  function handleSubmit() {
     if (!verificationToken) {
       Toast.show({
         type: 'error',
@@ -39,16 +62,16 @@ function PasswordForm({ email, verificationToken }: PasswordFormProps) {
       return;
     }
 
-    if (isRegistering) return;
-    register();
+    if (isSubmitting) return;
+    submit();
   }
 
   return (
     <View style={styles.container}>
       <View style={styles.contentContainer}>
         <View style={styles.titleContainer}>
-          <Typography.Display>비밀번호 설정</Typography.Display>
-          <Typography.BodyBase>세모산에서 사용할 비밀번호를 설정해주세요.</Typography.BodyBase>
+          <Typography.Display>{copy.title}</Typography.Display>
+          <Typography.BodyBase>{copy.description}</Typography.BodyBase>
         </View>
 
         <View style={styles.inputContainer}>
@@ -79,12 +102,12 @@ function PasswordForm({ email, verificationToken }: PasswordFormProps) {
       </View>
 
       <Button
-        onPress={handleSignUp}
-        disabled={isRegistering || !hasMinLength || !hasLetter || !hasNumber || password !== passwordConfirm}
-        loading={isRegistering}
+        onPress={handleSubmit}
+        disabled={isSubmitting || !hasMinLength || !hasLetter || !hasNumber || password !== passwordConfirm}
+        loading={isSubmitting}
         fullWidth
       >
-        회원가입 완료
+        {copy.submit}
       </Button>
     </View>
   );

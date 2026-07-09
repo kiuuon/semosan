@@ -26,6 +26,7 @@ function TestEmailVerificationForm({ initialEmail = 'test@example.com' }: { init
   return (
     <>
       <EmailVerificationForm
+        type="SIGNUP"
         email={email}
         setEmail={setEmail}
         code={code}

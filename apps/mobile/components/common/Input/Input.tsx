@@ -2,7 +2,7 @@ import { type ReactNode, useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import colors from '../../../lib/constants/colors';
-import Typography from '../Typography/Typography';
+import Typography from '../typography/Typography';
 
 interface InputProps {
   value: string;

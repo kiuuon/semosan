@@ -2,13 +2,14 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { useMutation } from '@tanstack/react-query';
 import Toast from 'react-native-toast-message';
 
-import Typography from '../../common/Typography/Typography';
+import Typography from '../../common/typography/Typography';
 import colors from '../../../lib/constants/colors';
-import { sendEmailCode, verifyEmailCode } from '../../../lib/apis/auth';
-import Button from '../../common/Button/Button';
-import CodeInput from '../CodeInput/CodeInput';
+import { EmailVerificationType, sendEmailCode, verifyEmailCode } from '../../../lib/apis/auth';
+import Button from '../../common/button/Button';
+import CodeInput from '../code-input/CodeInput';
 
 interface EmailVerificationFormProps {
+  type: EmailVerificationType;
   email: string;
   setEmail: (email: string) => void;
   code: string;
@@ -18,6 +19,7 @@ interface EmailVerificationFormProps {
 }
 
 function EmailVerificationForm({
+  type,
   email,
   setEmail,
   code,
@@ -26,7 +28,7 @@ function EmailVerificationForm({
   setStep,
 }: EmailVerificationFormProps) {
   const { mutate: sendCode, isPending: isSendingCode } = useMutation({
-    mutationFn: () => sendEmailCode(email.trim(), 'SIGNUP'),
+    mutationFn: () => sendEmailCode(email.trim(), type),
     onSuccess: () => {
       Toast.show({
         type: 'success',
@@ -36,7 +38,7 @@ function EmailVerificationForm({
   });
 
   const { mutate: verifyCode, isPending: isVerifyingCode } = useMutation({
-    mutationFn: () => verifyEmailCode(email, code, 'SIGNUP'),
+    mutationFn: () => verifyEmailCode(email, code, type),
     onSuccess: (data) => {
       setVerificationToken(data.verificationToken);
       setStep('password');

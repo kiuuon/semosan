@@ -2,34 +2,41 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 
-import Header from '../../components/common/Header/Header';
-import SignIn from '../../components/auth/SignIn/SignIn';
-import SignUp from '../../components/auth/SignUp/SignUp';
+import Header from '../../components/common/header/Header';
+import SignIn from '../../components/auth/sign-in/SignIn';
+import SignUp from '../../components/auth/sign-up/SignUp';
+import FindPassword from '../../components/auth/find-password/FindPassword';
 
-type AuthMode = 'signIn' | 'signUp';
+type AuthMode = 'signIn' | 'signUp' | 'findPassword';
+
+const TITLES: Record<AuthMode, string> = {
+  signIn: '로그인',
+  signUp: '회원가입',
+  findPassword: '비밀번호 찾기',
+};
 
 export default function AuthScreen() {
   const [mode, setMode] = useState<AuthMode>('signIn');
 
-  const isSignUp = mode === 'signUp';
-
   function handleBack() {
-    if (isSignUp) {
+    if (mode !== 'signIn') {
       setMode('signIn');
-      return;
-    }
-
-    if (router.canGoBack()) {
+    } else if (router.canGoBack()) {
       router.back();
     }
   }
-
   return (
     <View style={styles.container}>
-      <Header title={isSignUp ? '회원가입' : '로그인'} onBack={handleBack} />
+      <Header title={TITLES[mode]} onBack={handleBack} />
 
       <KeyboardAvoidingView style={styles.body} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        {isSignUp ? <SignUp /> : <SignIn onSwitchToSignUp={() => setMode('signUp')} />}
+        {mode === 'signUp' ? (
+          <SignUp />
+        ) : mode === 'findPassword' ? (
+          <FindPassword onSuccess={() => setMode('signIn')} />
+        ) : (
+          <SignIn onSwitchToSignUp={() => setMode('signUp')} onSwitchToFindPassword={() => setMode('findPassword')} />
+        )}
       </KeyboardAvoidingView>
     </View>
   );

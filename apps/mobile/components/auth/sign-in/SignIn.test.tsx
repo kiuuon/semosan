@@ -24,7 +24,7 @@ describe('SignIn', () => {
   });
 
   it('로그인 화면을 표시한다', async () => {
-    await renderWithProviders(<SignIn onSwitchToSignUp={jest.fn()} />);
+    await renderWithProviders(<SignIn onSwitchToSignUp={jest.fn()} onSwitchToFindPassword={jest.fn()} />);
 
     expect(screen.getByText('세모산')).toBeOnTheScreen();
     expect(screen.getByText('산을 오르는 모든 순간을 함께')).toBeOnTheScreen();
@@ -32,13 +32,13 @@ describe('SignIn', () => {
   });
 
   it('이메일과 비밀번호가 비어 있으면 로그인 버튼이 비활성화된다', async () => {
-    await renderWithProviders(<SignIn onSwitchToSignUp={jest.fn()} />);
+    await renderWithProviders(<SignIn onSwitchToSignUp={jest.fn()} onSwitchToFindPassword={jest.fn()} />);
 
     expect(screen.getByText('로그인')).toBeDisabled();
   });
 
   it('이메일과 비밀번호를 입력하면 로그인 API를 호출한다', async () => {
-    await renderWithProviders(<SignIn onSwitchToSignUp={jest.fn()} />);
+    await renderWithProviders(<SignIn onSwitchToSignUp={jest.fn()} onSwitchToFindPassword={jest.fn()} />);
 
     await fireEvent.changeText(screen.getByPlaceholderText('example@email.com'), '  test@example.com  ');
     await fireEvent.changeText(screen.getByPlaceholderText('비밀번호를 입력하세요'), 'password123');
@@ -50,7 +50,7 @@ describe('SignIn', () => {
   });
 
   it('로그인 성공 시 홈 화면으로 이동한다', async () => {
-    await renderWithProviders(<SignIn onSwitchToSignUp={jest.fn()} />);
+    await renderWithProviders(<SignIn onSwitchToSignUp={jest.fn()} onSwitchToFindPassword={jest.fn()} />);
 
     await fireEvent.changeText(screen.getByPlaceholderText('example@email.com'), 'test@example.com');
     await fireEvent.changeText(screen.getByPlaceholderText('비밀번호를 입력하세요'), 'password123');
@@ -63,18 +63,19 @@ describe('SignIn', () => {
 
   it('회원가입 링크를 누르면 onSwitchToSignUp을 호출한다', async () => {
     const onSwitchToSignUp = jest.fn();
-    await renderWithProviders(<SignIn onSwitchToSignUp={onSwitchToSignUp} />);
+    await renderWithProviders(<SignIn onSwitchToSignUp={onSwitchToSignUp} onSwitchToFindPassword={jest.fn()} />);
 
     await fireEvent.press(screen.getByText('회원가입'));
 
     expect(onSwitchToSignUp).toHaveBeenCalledTimes(1);
   });
 
-  it('비밀번호 찾기 링크를 누르면 비밀번호 찾기 화면으로 이동한다', async () => {
-    await renderWithProviders(<SignIn onSwitchToSignUp={jest.fn()} />);
+  it('비밀번호 찾기 링크를 누르면 onSwitchToFindPassword를 호출한다', async () => {
+    const onSwitchToFindPassword = jest.fn();
+    await renderWithProviders(<SignIn onSwitchToSignUp={jest.fn()} onSwitchToFindPassword={onSwitchToFindPassword} />);
 
     await fireEvent.press(screen.getByText('비밀번호 찾기'));
 
-    expect(router.push).toHaveBeenCalledWith('/auth/forgot-password');
+    expect(onSwitchToFindPassword).toHaveBeenCalledTimes(1);
   });
 });

@@ -1,7 +1,7 @@
 import { View, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import Typography from '../Typography/Typography';
+import Typography from '../typography/Typography';
 import colors from '../../../lib/constants/colors';
 
 interface HeaderProps {
