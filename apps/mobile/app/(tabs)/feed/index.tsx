@@ -1,11 +1,11 @@
 import { View, Text } from 'react-native';
 
-function Map() {
+function Feed() {
   return (
     <View>
-      <Text>Map</Text>
+      <Text>Feed</Text>
     </View>
   );
 }
 
-export default Map;
+export default Feed;
