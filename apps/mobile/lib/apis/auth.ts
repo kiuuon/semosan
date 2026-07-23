@@ -6,6 +6,19 @@ export interface AuthTokensResponse {
   refreshToken: string;
 }
 
+export interface UserProfile {
+  _id: string;
+  email: string;
+  nickname: string;
+  status: string;
+  height?: number;
+  weight?: number;
+  gender?: string;
+  age?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface VerifyEmailCodeResponse {
   verificationToken: string;
 }
@@ -71,4 +84,10 @@ export async function logout(): Promise<void> {
   }
 
   await clearTokens();
+}
+
+export async function getMe(): Promise<UserProfile> {
+  const instance = await getInstance();
+  const response = await instance.get<UserProfile>('/auth/me');
+  return response.data;
 }
