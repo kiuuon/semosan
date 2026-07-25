@@ -39,7 +39,7 @@ const Input = ({
 
   return (
     <View style={styles.inputContainer}>
-      <Typography.Label>{label}</Typography.Label>
+      {label && <Typography.Label>{label}</Typography.Label>}
       <View style={[styles.input, styles[size], { borderColor: borderColorByStatus[status] }]}>
         {accessoryLeft ? <View style={styles.accessoryLeft}>{accessoryLeft}</View> : null}
         <TextInput

@@ -78,7 +78,7 @@ describe('FindPassword', () => {
     await completeEmailVerification();
 
     expect(verifyEmailCode).toHaveBeenCalledWith('test@example.com', '123456', 'PASSWORD_RESET');
-    expect(screen.getByText('비밀번호 재설정')).toBeOnTheScreen();
+    expect(screen.getByText('새 비밀번호')).toBeOnTheScreen();
   });
 
   it('비밀번호 변경 성공 시 resetPassword API를 호출하고 onSuccess를 호출한다', async () => {
@@ -88,7 +88,7 @@ describe('FindPassword', () => {
 
     await fireEvent.changeText(screen.getByPlaceholderText('비밀번호를 입력하세요'), 'password123');
     await fireEvent.changeText(screen.getByPlaceholderText('비밀번호를 한 번 더 입력하세요'), 'password123');
-    await fireEvent.press(screen.getByText('비밀번호 변경'));
+    await fireEvent.press(screen.getByText('비밀번호 변경 완료'));
 
     await waitFor(() => {
       expect(resetPassword).toHaveBeenCalledWith('test@example.com', 'verification-token', 'password123');
