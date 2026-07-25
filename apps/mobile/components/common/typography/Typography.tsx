@@ -92,7 +92,7 @@ const Typography = {
   /** 배지, 태그, 상태 레이블 */
   Label: createTypography(
     {
-      fontFamily: 'NotoSansKR_500Medium',
+      fontFamily: 'NotoSansKR_700Bold',
       fontSize: 12,
       lineHeight: 12 * 1.4,
       letterSpacing: 12 * 0.1,

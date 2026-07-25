@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import * as bcrypt from 'bcrypt';
 import { Model, Types } from 'mongoose';
@@ -60,6 +60,53 @@ export class UsersService {
     });
 
     return user;
+  }
+
+  async updateNickname(userId: string, nickname: string) {
+    if (!Types.ObjectId.isValid(userId)) {
+      throw new NotFoundException('사용자를 찾을 수 없습니다.');
+    }
+
+    const user = await this.userModel
+      .findOneAndUpdate(
+        { _id: userId, status: USER_STATUS.ACTIVE },
+        { $set: { nickname: nickname.trim() } },
+        { new: true },
+      )
+      .select('-password')
+      .exec();
+
+    if (!user) {
+      throw new NotFoundException('사용자를 찾을 수 없습니다.');
+    }
+
+    return user;
+  }
+
+  async updatePasswordById(userId: string, newPassword: string): Promise<void> {
+    const hashedPassword = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
+
+    const result = await this.userModel
+      .updateOne({ _id: userId, status: USER_STATUS.ACTIVE }, { $set: { password: hashedPassword } })
+      .exec();
+
+    if (!result.matchedCount) {
+      throw new NotFoundException('사용자를 찾을 수 없습니다.');
+    }
+  }
+
+  async deleteAccount(userId: string): Promise<void> {
+    if (!Types.ObjectId.isValid(userId)) {
+      throw new NotFoundException('사용자를 찾을 수 없습니다.');
+    }
+
+    const result = await this.userModel
+      .updateOne({ _id: userId, status: USER_STATUS.ACTIVE }, { $set: { status: USER_STATUS.DELETED } })
+      .exec();
+
+    if (!result.matchedCount) {
+      throw new NotFoundException('사용자를 찾을 수 없습니다.');
+    }
   }
 
   async resetPassword(email: string, newPassword: string): Promise<void> {

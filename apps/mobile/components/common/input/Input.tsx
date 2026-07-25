@@ -39,7 +39,7 @@ const Input = ({
 
   return (
     <View style={styles.inputContainer}>
-      <Typography.Label>{label}</Typography.Label>
+      {label && <Typography.Label>{label}</Typography.Label>}
       <View style={[styles.input, styles[size], { borderColor: borderColorByStatus[status] }]}>
         {accessoryLeft ? <View style={styles.accessoryLeft}>{accessoryLeft}</View> : null}
         <TextInput
@@ -71,7 +71,7 @@ const Input = ({
       </View>
       {caption && (
         <Typography.Caption
-          color={status === 'error' ? colors.danger : status === 'active' ? colors.forest700 : colors.stone900}
+          color={status === 'error' ? colors.danger : status === 'active' ? colors.forest700 : colors.stone500}
         >
           {caption}
         </Typography.Caption>

@@ -50,7 +50,7 @@ function SignUp() {
           type="SIGNUP"
           email={email}
           verificationToken={verificationToken}
-          onComplete={() => router.replace('/(tabs)/home')}
+          onComplete={() => router.back()}
         />
       ) : null}
     </View>
