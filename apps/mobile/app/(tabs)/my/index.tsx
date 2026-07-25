@@ -1,10 +1,9 @@
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import colors from '../../../lib/constants/colors';
 import useAuth from '../../../lib/hooks/useAuth';
 import { getMe } from '../../../lib/apis/auth';
-import Button from '../../../components/common/button/Button';
 import Typography from '../../../components/common/typography/Typography';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
@@ -20,9 +19,17 @@ function MyScreen() {
   if (!accessToken) {
     return (
       <View style={styles.container}>
-        <View style={styles.profileSection}>
-          <Text>My</Text>
-          <Button onPress={() => router.push('/auth')}>로그인</Button>
+        <View style={styles.loginSection}>
+          <View>
+            <TouchableOpacity onPress={() => router.push('/auth')} style={styles.loginButton}>
+              <Typography.HeadingLg>로그인 · 회원가입</Typography.HeadingLg>
+              <Ionicons name="chevron-forward" size={18} color={colors.stone300} />
+            </TouchableOpacity>
+            <Typography.Caption color={colors.stone500}>{`로그인하고 나만의 산행을 기록해 보세요.`}</Typography.Caption>
+          </View>
+          <TouchableOpacity style={styles.settingsButtonWrapper} onPress={() => router.push('/settings')}>
+            <Ionicons name="settings-outline" size={20} />
+          </TouchableOpacity>
         </View>
       </View>
     );
@@ -36,12 +43,12 @@ function MyScreen() {
             <MaterialCommunityIcons name="hiking" size={32} color={colors.stone300} />
           </View>
           <View style={styles.profileInfo}>
-            <Typography.HeadingMd>{user?.nickname ?? 'My'}</Typography.HeadingMd>
+            <Typography.HeadingMd>{user?.nickname}</Typography.HeadingMd>
             <Typography.Caption color={colors.stone700}>{user?.email}</Typography.Caption>
           </View>
         </View>
         <TouchableOpacity style={styles.settingsButtonWrapper} onPress={() => router.push('/settings')}>
-          <Ionicons name="settings-outline" size={20} color={colors.forest700} />
+          <Ionicons name="settings-outline" size={20} />
         </TouchableOpacity>
       </View>
     </View>
@@ -56,9 +63,25 @@ const styles = StyleSheet.create({
   headingSection: {
     paddingHorizontal: 20,
     paddingVertical: 24,
-    backgroundColor: colors.forest50,
+    // backgroundColor: colors.forest50,
+    borderBottomWidth: 10,
+    borderBottomColor: colors.stone100,
     flexDirection: 'row',
     justifyContent: 'space-between',
+  },
+  loginSection: {
+    paddingHorizontal: 20,
+    paddingVertical: 24,
+    gap: 4,
+    borderBottomWidth: 10,
+    borderBottomColor: colors.stone100,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  loginButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   profileSection: {
     flexDirection: 'row',

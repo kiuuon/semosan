@@ -91,3 +91,25 @@ export async function getMe(): Promise<UserProfile> {
   const response = await instance.get<UserProfile>('/auth/me');
   return response.data;
 }
+
+export async function verifyPassword(password: string): Promise<void> {
+  const instance = await getInstance();
+  await instance.post('/auth/password/verify', { password });
+}
+
+export async function updateNickname(nickname: string): Promise<UserProfile> {
+  const instance = await getInstance();
+  const response = await instance.patch<UserProfile>('/users/me', { nickname: nickname.trim() });
+  return response.data;
+}
+
+export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
+  const instance = await getInstance();
+  await instance.patch('/auth/password', { currentPassword, newPassword });
+}
+
+export async function deleteAccount(): Promise<void> {
+  const instance = await getInstance();
+  await instance.delete('/users/me');
+  await clearTokens();
+}
