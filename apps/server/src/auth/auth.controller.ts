@@ -1,11 +1,14 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Patch, Post, Req, UseGuards } from '@nestjs/common';
 
 import { CurrentUser } from './decorators/current-user.decorator';
+import type { AuthenticatedRequest } from './decorators/current-user.decorator';
 import { EmailVerificationService } from './email-verification.service';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { SendEmailCodeDto } from './dto/send-email-code.dto';
 import { VerifyEmailCodeDto } from './dto/verify-email-code.dto';
+import { VerifyPasswordDto } from './dto/verify-password.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { User } from '../schemas/user.schema';
 import { AuthService } from './auth.service';
@@ -40,6 +43,18 @@ export class AuthController {
     );
     await this.usersService.resetPassword(dto.email, dto.newPassword);
     return { message: '비밀번호가 변경되었습니다.' };
+  }
+
+  @Post('password/verify')
+  @UseGuards(JwtAuthGuard)
+  verifyPassword(@Req() req: AuthenticatedRequest, @Body() dto: VerifyPasswordDto) {
+    return this.authService.verifyPassword(req.user._id.toString(), dto.password);
+  }
+
+  @Patch('password')
+  @UseGuards(JwtAuthGuard)
+  changePassword(@Req() req: AuthenticatedRequest, @Body() dto: ChangePasswordDto) {
+    return this.authService.changePassword(req.user._id.toString(), dto.currentPassword, dto.newPassword);
   }
 
   @Post('login')

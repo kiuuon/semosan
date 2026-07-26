@@ -21,7 +21,7 @@ function SignIn({ onSwitchToSignUp, onSwitchToFindPassword }: SignInProps) {
   const { mutate, isPending } = useMutation({
     mutationFn: ({ email, password }: { email: string; password: string }) => login(email, password),
     onSuccess: () => {
-      router.replace('/(tabs)/home');
+      router.back();
     },
   });
 

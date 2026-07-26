@@ -6,6 +6,19 @@ export interface AuthTokensResponse {
   refreshToken: string;
 }
 
+export interface UserProfile {
+  _id: string;
+  email: string;
+  nickname: string;
+  status: string;
+  height?: number;
+  weight?: number;
+  gender?: string;
+  age?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface VerifyEmailCodeResponse {
   verificationToken: string;
 }
@@ -70,5 +83,33 @@ export async function logout(): Promise<void> {
     await instance.post('/auth/logout', { refreshToken });
   }
 
+  await clearTokens();
+}
+
+export async function getMe(): Promise<UserProfile> {
+  const instance = await getInstance();
+  const response = await instance.get<UserProfile>('/auth/me');
+  return response.data;
+}
+
+export async function verifyPassword(password: string): Promise<void> {
+  const instance = await getInstance();
+  await instance.post('/auth/password/verify', { password });
+}
+
+export async function updateNickname(nickname: string): Promise<UserProfile> {
+  const instance = await getInstance();
+  const response = await instance.patch<UserProfile>('/users/me', { nickname: nickname.trim() });
+  return response.data;
+}
+
+export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
+  const instance = await getInstance();
+  await instance.patch('/auth/password', { currentPassword, newPassword });
+}
+
+export async function deleteAccount(): Promise<void> {
+  const instance = await getInstance();
+  await instance.delete('/users/me');
   await clearTokens();
 }

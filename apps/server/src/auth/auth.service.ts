@@ -54,6 +54,40 @@ export class AuthService {
     return this.issueTokens(user);
   }
 
+  async verifyPassword(userId: string, password: string): Promise<{ verified: true }> {
+    const user = await this.usersService.findActiveById(userId);
+
+    if (!user) {
+      throw new UnauthorizedException('유효하지 않은 토큰입니다.');
+    }
+
+    const passwordMatches = await bcrypt.compare(password, user.password);
+
+    if (!passwordMatches) {
+      throw new UnauthorizedException('비밀번호가 올바르지 않습니다.');
+    }
+
+    return { verified: true };
+  }
+
+  async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<{ changed: true }> {
+    const user = await this.usersService.findActiveById(userId);
+
+    if (!user) {
+      throw new UnauthorizedException('유효하지 않은 토큰입니다.');
+    }
+
+    const passwordMatches = await bcrypt.compare(currentPassword, user.password);
+
+    if (!passwordMatches) {
+      throw new UnauthorizedException('현재 비밀번호가 올바르지 않습니다.');
+    }
+
+    await this.usersService.updatePasswordById(userId, newPassword);
+
+    return { changed: true };
+  }
+
   async refresh(refreshToken: string): Promise<AuthTokensResponse> {
     const tokenHash = this.hashRefreshToken(refreshToken);
     const stored = await this.refreshTokenModel
@@ -93,6 +127,15 @@ export class AuthService {
     if (stored && !stored.revokedAt) {
       await this.revokeRefreshToken(stored);
     }
+  }
+
+  async revokeAllRefreshTokens(userId: string): Promise<void> {
+    await this.refreshTokenModel
+      .updateMany(
+        { userId: new Types.ObjectId(userId), revokedAt: { $exists: false } },
+        { $set: { revokedAt: new Date() } },
+      )
+      .exec();
   }
 
   private async issueTokens(user: UserDocument): Promise<AuthTokensResponse> {

@@ -71,7 +71,7 @@ const Input = ({
       </View>
       {caption && (
         <Typography.Caption
-          color={status === 'error' ? colors.danger : status === 'active' ? colors.forest700 : colors.stone900}
+          color={status === 'error' ? colors.danger : status === 'active' ? colors.forest700 : colors.stone500}
         >
           {caption}
         </Typography.Caption>

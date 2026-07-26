@@ -1,10 +1,24 @@
-import { Body, Controller, Get, InternalServerErrorException, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  InternalServerErrorException,
+  Patch,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 
 import { EmailVerificationService } from '../auth/email-verification.service';
 import { AuthService } from '../auth/auth.service';
+import type { AuthenticatedRequest } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { EmailVerificationType } from '../auth/types/email-verification-type';
 import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateNicknameDto } from './dto/update-nickname.dto';
 import { UsersService } from './users.service';
 
 @Controller('users')
@@ -30,6 +44,21 @@ export class UsersController {
     }
 
     return this.authService.issueTokensAfterSignup(String(user._id));
+  }
+
+  @Patch('me')
+  @UseGuards(JwtAuthGuard)
+  updateMe(@Req() req: AuthenticatedRequest, @Body() dto: UpdateNicknameDto) {
+    return this.usersService.updateNickname(req.user._id.toString(), dto.nickname);
+  }
+
+  @Delete('me')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteMe(@Req() req: AuthenticatedRequest) {
+    const userId = req.user._id.toString();
+    await this.usersService.deleteAccount(userId);
+    await this.authService.revokeAllRefreshTokens(userId);
   }
 
   @Get()
