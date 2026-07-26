@@ -12,11 +12,11 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 describe('BeforeSearch', () => {
   let queryClient: QueryClient;
 
-  async function renderBeforeSearch(onSearch = jest.fn()) {
+  async function renderBeforeSearch(onSearch = jest.fn(), onRegionPress = jest.fn()) {
     queryClient = createTestQueryClient();
     return render(
       <QueryClientProvider client={queryClient}>
-        <BeforeSearch onSearch={onSearch} />
+        <BeforeSearch onSearch={onSearch} onRegionPress={onRegionPress} />
       </QueryClientProvider>,
     );
   }
@@ -76,17 +76,17 @@ describe('BeforeSearch', () => {
     expect(onSearch).toHaveBeenCalledWith('북한산');
   });
 
-  it('지역을 누르면 onSearch를 호출한다', async () => {
-    const onSearch = jest.fn();
+  it('지역을 누르면 onRegionPress를 호출한다', async () => {
+    const onRegionPress = jest.fn();
 
-    await renderBeforeSearch(onSearch);
+    await renderBeforeSearch(jest.fn(), onRegionPress);
 
     await waitFor(() => {
       expect(screen.getByText('최근 검색어가 없습니다.')).toBeOnTheScreen();
     });
     await fireEvent.press(screen.getByText('강원도'));
 
-    expect(onSearch).toHaveBeenCalledWith('강원도');
+    expect(onRegionPress).toHaveBeenCalledWith('강원도');
   });
 
   it('최근 검색어를 삭제하면 목록과 저장소에서 제거한다', async () => {

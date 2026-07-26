@@ -44,9 +44,10 @@ async function fetchRecentSearches(): Promise<string[]> {
 
 interface BeforeSearchProps {
   onSearch: (search: string) => void;
+  onRegionPress?: (region: string) => void;
 }
 
-function BeforeSearch({ onSearch }: BeforeSearchProps) {
+function BeforeSearch({ onSearch, onRegionPress }: BeforeSearchProps) {
   const queryClient = useQueryClient();
   const { data: recentSearches = [], isPending } = useQuery({
     queryKey: RECENT_SEARCHES_QUERY_KEY,
@@ -98,7 +99,7 @@ function BeforeSearch({ onSearch }: BeforeSearchProps) {
         <Typography.HeadingLg>지역별</Typography.HeadingLg>
         <View style={styles.regionList}>
           {REGIONS.map((region) => (
-            <TouchableOpacity key={region} style={styles.regionItem} onPress={() => onSearch(region)}>
+            <TouchableOpacity key={region} style={styles.regionItem} onPress={() => onRegionPress?.(region)}>
               <Typography.BodyBase>{region}</Typography.BodyBase>
             </TouchableOpacity>
           ))}

@@ -5,12 +5,22 @@ type ColorType = (typeof colors)[keyof typeof colors];
 
 interface TypographyProps extends TextProps {
   color?: ColorType;
+  /** true면 1줄, 숫자를 주면 해당 줄 수에서 ... 처리 */
+  ellipsis?: boolean | number;
 }
 
 function createTypography(variantStyle: TextStyle, displayName: string) {
-  function TypographyVariant({ style, color, ...props }: TypographyProps) {
+  function TypographyVariant({ style, color, ellipsis, numberOfLines, ellipsizeMode, ...props }: TypographyProps) {
+    const ellipsisLines = ellipsis === true ? 1 : typeof ellipsis === 'number' ? ellipsis : undefined;
+
     return (
-      <Text allowFontScaling={false} style={[variantStyle, { color: color ?? colors.stone900 }, style]} {...props} />
+      <Text
+        allowFontScaling={false}
+        style={[variantStyle, { color: color ?? colors.stone900 }, style]}
+        numberOfLines={numberOfLines ?? ellipsisLines}
+        ellipsizeMode={ellipsizeMode ?? (ellipsisLines != null ? 'tail' : undefined)}
+        {...props}
+      />
     );
   }
 

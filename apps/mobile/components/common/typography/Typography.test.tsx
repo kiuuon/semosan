@@ -126,4 +126,20 @@ describe('Typography', () => {
     expect(text).toHaveTextContent('1.2km');
     expect(text.props.numberOfLines).toBe(1);
   });
+
+  it('ellipsis가 true면 1줄에서 ... 처리한다', async () => {
+    await render(<Typography.BodyBase ellipsis>긴 텍스트</Typography.BodyBase>);
+
+    const text = screen.getByText('긴 텍스트');
+    expect(text.props.numberOfLines).toBe(1);
+    expect(text.props.ellipsizeMode).toBe('tail');
+  });
+
+  it('ellipsis에 숫자를 주면 해당 줄 수에서 ... 처리한다', async () => {
+    await render(<Typography.Caption ellipsis={2}>긴 텍스트</Typography.Caption>);
+
+    const text = screen.getByText('긴 텍스트');
+    expect(text.props.numberOfLines).toBe(2);
+    expect(text.props.ellipsizeMode).toBe('tail');
+  });
 });
