@@ -82,6 +82,7 @@ function Explore() {
               placeholder="산 이름으로 검색"
               value={inputValue}
               onChangeText={handleChangeText}
+              autoFocus
               accessoryRight={
                 submitted ? (
                   <TouchableOpacity onPress={handleClear}>

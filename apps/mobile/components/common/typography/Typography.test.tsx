@@ -77,7 +77,7 @@ const variants = [
     name: 'Label',
     Component: Typography.Label,
     style: {
-      fontFamily: 'NotoSansKR_500Medium',
+      fontFamily: 'NotoSansKR_700Bold',
       fontSize: 12,
       lineHeight: 12 * 1.4,
       letterSpacing: 12 * 0.1,

@@ -35,15 +35,15 @@ describe('PasswordRequirements', () => {
 
     expect(screen.getByText('8자 이상')).toHaveStyle({
       color: colors.forest900,
-      fontFamily: 'NotoSansKR_500Medium',
+      fontFamily: 'NotoSansKR_700Bold',
     });
     expect(screen.getByText('영문 포함')).toHaveStyle({
       color: colors.forest900,
-      fontFamily: 'NotoSansKR_500Medium',
+      fontFamily: 'NotoSansKR_700Bold',
     });
     expect(screen.getByText('숫자 포함')).toHaveStyle({
       color: colors.forest900,
-      fontFamily: 'NotoSansKR_500Medium',
+      fontFamily: 'NotoSansKR_700Bold',
     });
   });
 
@@ -56,7 +56,7 @@ describe('PasswordRequirements', () => {
 
     expect(screen.getByText(label)).toHaveStyle({
       color: colors.forest900,
-      fontFamily: 'NotoSansKR_500Medium',
+      fontFamily: 'NotoSansKR_700Bold',
     });
 
     const inactiveLabels = ['8자 이상', '영문 포함', '숫자 포함'].filter((text) => text !== label);

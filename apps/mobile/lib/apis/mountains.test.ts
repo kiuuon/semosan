@@ -1,5 +1,5 @@
 import getInstance from './instance';
-import { searchMountains } from './mountains';
+import { getMountainDetail, searchMountains } from './mountains';
 
 jest.mock('./instance');
 
@@ -94,6 +94,37 @@ describe('mountains', () => {
           keyword: '북한산',
           type: 'name',
           page: 2,
+        },
+      });
+    });
+  });
+
+  describe('getMountainDetail', () => {
+    it('산 상세 API를 호출하고 결과를 반환한다', async () => {
+      const result = {
+        id: '20000059',
+        name: '관악산',
+        region: '서울특별시 관악구',
+        height: 632,
+        imageUrl: 'https://example.com/gwanak.jpg',
+        subtitle: '불의 산',
+        description: '상세 설명',
+        transportInfo: '지하철 이용',
+      };
+      mockGet.mockResolvedValue({ data: result });
+
+      await expect(
+        getMountainDetail({
+          id: '20000059',
+          name: '  관악산  ',
+          region: '  서울특별시 관악구  ',
+        }),
+      ).resolves.toEqual(result);
+
+      expect(mockGet).toHaveBeenCalledWith('/mountains/20000059', {
+        params: {
+          name: '관악산',
+          region: '서울특별시 관악구',
         },
       });
     });

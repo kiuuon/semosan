@@ -1,4 +1,4 @@
-import { InternalServerErrorException } from '@nestjs/common';
+import { InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 
@@ -252,5 +252,89 @@ describe('MountainsService', () => {
         page: 1,
       }),
     ).rejects.toThrow(new InternalServerErrorException('산 정보를 불러오지 못했습니다.'));
+  });
+
+  describe('getDetail', () => {
+    it('id로 산을 찾아 상세 정보를 반환한다', async () => {
+      configService.get.mockReturnValue('test-service-key');
+      fetchMock.mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          response: {
+            header: { resultCode: '00' },
+            body: {
+              items: {
+                item: [
+                  {
+                    mntnid: 20000001,
+                    mntnnm: '다른산',
+                    mntninfopoflc: '강원도',
+                    mntninfohght: 100,
+                    mntnattchimageseq: '',
+                    mntnsbttlinfo: '다른 부제',
+                    mntninfodtlinfocont: '다른 설명',
+                    pbtrninfodscrt: '다른 교통',
+                  },
+                  {
+                    mntnid: 20000059,
+                    mntnnm: '관악산',
+                    mntninfopoflc: '서울특별시 관악구ㆍ금천구, 경기도 안양시ㆍ과천시',
+                    mntninfohght: '632',
+                    mntnattchimageseq:
+                      'http://www.forest.go.kr/newkfsweb/cmm/fms/getImage.do?fileSn=1&atchFileId=FILE_123',
+                    mntnsbttlinfo: '수차례 화마가 쓸고 갔던 불의 산',
+                    mntninfodtlinfocont:
+                      '관악산은 서울시 관악구와 금천구에 걸쳐 있다.&lt;BR&gt;위험한 암릉이 있다.',
+                    pbtrninfodscrt: '지하철이 가장 편리하다. &lt;BR&gt;&amp;gt; 2호선 신림역&#xD;&#xA;버스 이용 가능',
+                  },
+                ],
+              },
+              totalCount: 2,
+            },
+          },
+        }),
+      });
+
+      const result = await service.getDetail('20000059', {
+        name: '관악산',
+        region: '서울특별시 관악구ㆍ금천구, 경기도 안양시ㆍ과천시',
+      });
+
+      const requestedUrl = fetchMock.mock.calls[0][0] as string;
+      expect(requestedUrl).toContain('mntnNm=');
+      expect(result).toEqual({
+        id: '20000059',
+        name: '관악산',
+        region: '서울특별시 관악구ㆍ금천구, 경기도 안양시ㆍ과천시',
+        height: 632,
+        imageUrl: 'http://www.forest.go.kr/newkfsweb/cmm/fms/getImage.do?fileSn=1&atchFileId=FILE_123',
+        subtitle: '수차례 화마가 쓸고 갔던 불의 산',
+        description: '관악산은 서울시 관악구와 금천구에 걸쳐 있다.\n위험한 암릉이 있다.',
+        transportInfo: '지하철이 가장 편리하다. \n> 2호선 신림역\n버스 이용 가능',
+      });
+    });
+
+    it('산이 없으면 NotFoundException을 던진다', async () => {
+      configService.get.mockReturnValue('test-service-key');
+      fetchMock.mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          response: {
+            header: { resultCode: '00' },
+            body: {
+              items: { item: [] },
+              totalCount: 0,
+            },
+          },
+        }),
+      });
+
+      await expect(
+        service.getDetail('999', {
+          name: '없는산',
+          region: '서울',
+        }),
+      ).rejects.toThrow(new NotFoundException('산 정보를 찾을 수 없습니다.'));
+    });
   });
 });

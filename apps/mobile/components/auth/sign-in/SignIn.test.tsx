@@ -49,7 +49,7 @@ describe('SignIn', () => {
     });
   });
 
-  it('로그인 성공 시 홈 화면으로 이동한다', async () => {
+  it('로그인 성공 시 이전 화면으로 돌아간다', async () => {
     await renderWithProviders(<SignIn onSwitchToSignUp={jest.fn()} onSwitchToFindPassword={jest.fn()} />);
 
     await fireEvent.changeText(screen.getByPlaceholderText('example@email.com'), 'test@example.com');
@@ -57,7 +57,7 @@ describe('SignIn', () => {
     await fireEvent.press(screen.getByText('로그인'));
 
     await waitFor(() => {
-      expect(router.replace).toHaveBeenCalledWith('/(tabs)/home');
+      expect(router.back).toHaveBeenCalled();
     });
   });
 

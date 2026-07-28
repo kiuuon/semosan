@@ -1,5 +1,6 @@
-import { ActivityIndicator, FlatList, Image, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, FlatList, Image, Pressable, StyleSheet, View } from 'react-native';
 import { useInfiniteQuery } from '@tanstack/react-query';
+import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { searchMountains, type MountainSearchType } from '../../lib/apis/mountains';
@@ -67,7 +68,19 @@ function AfterSearch({ keyword, type = 'name' }: AfterSearchProps) {
         ) : null
       }
       renderItem={({ item }) => (
-        <View style={styles.item}>
+        <Pressable
+          style={styles.item}
+          onPress={() =>
+            router.push({
+              pathname: '/mountain/[id]',
+              params: {
+                id: item.id,
+                name: item.name,
+                region: item.region,
+              },
+            })
+          }
+        >
           {item.imageUrl ? (
             <Image source={{ uri: item.imageUrl }} style={styles.image} />
           ) : (
@@ -81,7 +94,7 @@ function AfterSearch({ keyword, type = 'name' }: AfterSearchProps) {
               {item.height != null ? `${item.height}m` : '-'} · {item.region || '지역 정보 없음'}
             </Typography.Caption>
           </View>
-        </View>
+        </Pressable>
       )}
     />
   );

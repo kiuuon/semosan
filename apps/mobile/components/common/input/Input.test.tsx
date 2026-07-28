@@ -55,7 +55,7 @@ describe('Input', () => {
   it.each([
     ['error', colors.danger],
     ['active', colors.forest700],
-    ['default', colors.stone900],
+    ['default', colors.stone500],
   ] as const)('%s status caption 색상을 적용한다', async (status, color) => {
     await render(
       <Input
