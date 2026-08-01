@@ -15,6 +15,7 @@ interface InputProps {
   status?: 'default' | 'active' | 'error';
   caption?: string;
   secureTextEntry?: boolean;
+  autoFocus?: boolean;
 }
 
 const borderColorByStatus = {
@@ -34,6 +35,7 @@ const Input = ({
   value,
   caption,
   secureTextEntry = false,
+  autoFocus = false,
 }: InputProps) => {
   const [isSecureTextVisible, setIsSecureTextVisible] = useState(false);
 
@@ -48,6 +50,7 @@ const Input = ({
           placeholderTextColor={colors.stone300}
           autoCapitalize="none"
           autoCorrect={false}
+          autoFocus={autoFocus}
           secureTextEntry={secureTextEntry && !isSecureTextVisible}
           onChangeText={onChangeText}
           value={value}

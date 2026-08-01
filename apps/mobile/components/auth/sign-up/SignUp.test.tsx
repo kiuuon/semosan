@@ -102,7 +102,7 @@ describe('SignUp', () => {
     expect(screen.getByText('회원가입 완료')).toBeDisabled();
   });
 
-  it('회원가입 성공 시 signUp API를 호출하고 홈 화면으로 이동한다', async () => {
+  it('회원가입 성공 시 signUp API를 호출하고 이전 화면으로 돌아간다', async () => {
     await renderWithProviders(<SignUp />);
 
     await completeEmailVerification();
@@ -115,7 +115,7 @@ describe('SignUp', () => {
       expect(signUp).toHaveBeenCalledWith('test@example.com', 'password123', 'verification-token');
     });
     await waitFor(() => {
-      expect(router.replace).toHaveBeenCalledWith('/(tabs)/home');
+      expect(router.back).toHaveBeenCalled();
     });
   });
 });

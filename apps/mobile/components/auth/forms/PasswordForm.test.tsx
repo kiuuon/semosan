@@ -138,8 +138,8 @@ describe('PasswordForm', () => {
         />,
       );
 
-      expect(screen.getByText('비밀번호 재설정')).toBeOnTheScreen();
-      expect(screen.getByText('비밀번호 변경')).toBeOnTheScreen();
+      expect(screen.getByText('새 비밀번호')).toBeOnTheScreen();
+      expect(screen.getByText('비밀번호 변경 완료')).toBeOnTheScreen();
     });
 
     it('재설정 성공 시 resetPassword API를 호출하고 onComplete를 호출한다', async () => {
@@ -154,7 +154,7 @@ describe('PasswordForm', () => {
 
       await fireEvent.changeText(screen.getByPlaceholderText('비밀번호를 입력하세요'), 'password123');
       await fireEvent.changeText(screen.getByPlaceholderText('비밀번호를 한 번 더 입력하세요'), 'password123');
-      await fireEvent.press(screen.getByText('비밀번호 변경'));
+      await fireEvent.press(screen.getByText('비밀번호 변경 완료'));
 
       await waitFor(() => {
         expect(resetPassword).toHaveBeenCalledWith('test@example.com', 'verification-token', 'password123');
