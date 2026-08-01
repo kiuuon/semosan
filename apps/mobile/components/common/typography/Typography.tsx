@@ -32,10 +32,10 @@ const Typography = {
   /** 앱 로고, 히어로 타이틀 */
   Display: createTypography(
     {
-      fontFamily: 'NotoSansKR_800ExtraBold',
-      fontSize: 28,
-      lineHeight: 28 * 1.2,
-      letterSpacing: 28 * -0.02,
+      fontFamily: 'NotoSansKR_700Bold',
+      fontSize: 24,
+      lineHeight: 24 * 1.2,
+      letterSpacing: 24 * -0.02,
     },
     'Display',
   ),
@@ -110,6 +110,15 @@ const Typography = {
     'Label',
   ),
   /** 고도·거리·시간 수치 */
+  DataMonoLg: createTypography(
+    {
+      fontFamily: 'DMMono_500Medium',
+      fontSize: 16,
+      lineHeight: 16 * 1.4,
+      letterSpacing: 0,
+    },
+    'DataMonoLg',
+  ),
   DataMono: createTypography(
     {
       fontFamily: 'DMMono_500Medium',
