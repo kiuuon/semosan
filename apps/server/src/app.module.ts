@@ -5,6 +5,8 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { MountainsModule } from './mountains/mountains.module';
+import { PlacesModule } from './places/places.module';
+import { TripsModule } from './trips/trips.module';
 import { UsersModule } from './users/users.module';
 
 @Module({
@@ -20,6 +22,8 @@ import { UsersModule } from './users/users.module';
     UsersModule,
     AuthModule,
     MountainsModule,
+    TripsModule,
+    PlacesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

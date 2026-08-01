@@ -148,7 +148,23 @@ function MountainDetail() {
           </ScrollView>
 
           <View style={styles.footer}>
-            <Button fullWidth onPress={() => navigateWithAuth()}>
+            <Button
+              fullWidth
+              disabled={!data}
+              onPress={() => {
+                if (!data) return;
+                navigateWithAuth({
+                  pathname: '/create-trip',
+                  params: {
+                    mountainId: data.id,
+                    mountainName: data.name,
+                    mountainRegion: data.region,
+                    ...(data.height != null ? { mountainHeight: String(data.height) } : {}),
+                    ...(data.imageUrl ? { mountainImageUrl: data.imageUrl } : {}),
+                  },
+                });
+              }}
+            >
               일정 추가하기
             </Button>
           </View>
