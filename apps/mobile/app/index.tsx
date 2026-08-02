@@ -52,7 +52,11 @@ function TripCard({ trip, width }: { trip: Trip; width: number }) {
   const dday = getDdayLabel(trip.startDate, trip.endDate);
 
   return (
-    <TouchableOpacity style={[styles.tripCard, { width }]} activeOpacity={0.85} onPress={() => {}}>
+    <TouchableOpacity
+      style={[styles.tripCard, { width }]}
+      activeOpacity={0.85}
+      onPress={() => router.push(`/trip/${trip._id}`)}
+    >
       {trip.mountain.imageUrl ? (
         <Image source={{ uri: trip.mountain.imageUrl }} style={styles.tripImage} />
       ) : (
