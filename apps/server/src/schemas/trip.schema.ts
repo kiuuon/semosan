@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
 
-import { TRIP_MEMBER_ROLE, TRIP_STATUS, TRIP_STOP_CATEGORY } from '../common/constants/trip';
+import { TRIP_MEMBER_ROLE, TRIP_STATUS } from '../common/constants/trip';
 
 export type TripDocument = HydratedDocument<Trip>;
 
@@ -43,65 +43,6 @@ export class TripMemberEmbedded {
 
 export const TripMemberEmbeddedSchema = SchemaFactory.createForClass(TripMemberEmbedded);
 
-@Schema({ _id: false })
-export class TripStopPlaceSnapshot {
-  @Prop({ required: true, trim: true })
-  provider: string;
-
-  @Prop({ required: true, trim: true })
-  externalId: string;
-
-  @Prop({ required: true, trim: true })
-  name: string;
-
-  @Prop({ trim: true })
-  address?: string;
-
-  @Prop({ type: Number })
-  lat?: number;
-
-  @Prop({ type: Number })
-  lng?: number;
-
-  @Prop({ trim: true })
-  phone?: string;
-
-  @Prop({ trim: true })
-  categoryName?: string;
-}
-
-export const TripStopPlaceSnapshotSchema = SchemaFactory.createForClass(TripStopPlaceSnapshot);
-
-@Schema()
-export class TripStopEmbedded {
-  @Prop({ type: Types.ObjectId, ref: 'Place' })
-  placeId?: Types.ObjectId;
-
-  @Prop({
-    type: String,
-    enum: Object.values(TRIP_STOP_CATEGORY),
-    required: true,
-  })
-  category: string;
-
-  @Prop({ required: true })
-  date: Date;
-
-  @Prop({ type: Number, required: true, default: 0 })
-  order: number;
-
-  @Prop({ type: TripStopPlaceSnapshotSchema, required: true })
-  placeSnapshot: TripStopPlaceSnapshot;
-
-  @Prop({ trim: true })
-  memo?: string;
-
-  @Prop({ type: Types.ObjectId, required: true, ref: 'User' })
-  createdBy: Types.ObjectId;
-}
-
-export const TripStopEmbeddedSchema = SchemaFactory.createForClass(TripStopEmbedded);
-
 @Schema({ timestamps: true })
 export class Trip {
   @Prop({ type: Types.ObjectId, required: true, ref: 'User' })
@@ -132,9 +73,6 @@ export class Trip {
 
   @Prop({ type: [TripMemberEmbeddedSchema], default: [] })
   members: TripMemberEmbedded[];
-
-  @Prop({ type: [TripStopEmbeddedSchema], default: [] })
-  stops: TripStopEmbedded[];
 }
 
 export const TripSchema = SchemaFactory.createForClass(Trip);

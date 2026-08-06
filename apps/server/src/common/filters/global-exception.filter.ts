@@ -1,5 +1,5 @@
 import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus, Logger } from '@nestjs/common';
-import { Response } from 'express';
+import { Request, Response } from 'express';
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
@@ -7,18 +7,31 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
+    const request = ctx.getRequest<Request>();
     const response = ctx.getResponse<Response>();
     const { statusCode, message, errorCode } = this.resolveException(exception);
 
-    if (statusCode >= HttpStatus.INTERNAL_SERVER_ERROR) {
-      this.logger.error(exception);
-    }
+    this.logException(exception, request, statusCode, message);
 
     response.status(statusCode).json({
       statusCode,
       message,
       ...(errorCode ? { errorCode } : {}),
     });
+  }
+
+  private logException(exception: unknown, request: Request, statusCode: number, message: string) {
+    const method = request.method;
+    const url = request.originalUrl || request.url;
+    const logMessage = `${method} ${url} ${statusCode} - ${message}`;
+    const stack = exception instanceof Error ? exception.stack : undefined;
+
+    if (statusCode >= HttpStatus.INTERNAL_SERVER_ERROR) {
+      this.logger.error(logMessage, stack);
+      return;
+    }
+
+    this.logger.warn(stack ? `${logMessage}\n${stack}` : logMessage);
   }
 
   private resolveException(exception: unknown): {

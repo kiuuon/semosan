@@ -14,6 +14,7 @@ import {
 
 import type { AuthenticatedRequest } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { AddTripPlaceDto } from './dto/add-trip-place.dto';
 import { CreateTripDto } from './dto/create-trip.dto';
 import { JoinTripDto } from './dto/join-trip.dto';
 import { UpdateTripDto } from './dto/update-trip.dto';
@@ -29,9 +30,9 @@ export class TripsController {
     return this.tripsService.findMyTrips(req.user._id.toString());
   }
 
-  @Get(':id')
-  findOne(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
-    return this.tripsService.findOneForMember(id, req.user._id.toString());
+  @Post('join')
+  join(@Req() req: AuthenticatedRequest, @Body() dto: JoinTripDto) {
+    return this.tripsService.joinByInviteCode(req.user._id.toString(), dto.inviteCode);
   }
 
   @Post()
@@ -39,9 +40,25 @@ export class TripsController {
     return this.tripsService.create(req.user._id.toString(), dto);
   }
 
-  @Post('join')
-  join(@Req() req: AuthenticatedRequest, @Body() dto: JoinTripDto) {
-    return this.tripsService.joinByInviteCode(req.user._id.toString(), dto.inviteCode);
+  @Get(':id')
+  findOne(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
+    return this.tripsService.findOneForMember(id, req.user._id.toString());
+  }
+
+  @Get(':id/places')
+  findPlaces(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
+    return this.tripsService.findPlaces(id, req.user._id.toString());
+  }
+
+  @Post(':id/places')
+  addPlace(@Req() req: AuthenticatedRequest, @Param('id') id: string, @Body() dto: AddTripPlaceDto) {
+    return this.tripsService.addPlace(id, req.user._id.toString(), dto);
+  }
+
+  @Delete(':id/places/:placeId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  removePlace(@Req() req: AuthenticatedRequest, @Param('id') id: string, @Param('placeId') placeId: string) {
+    return this.tripsService.removePlace(id, placeId, req.user._id.toString());
   }
 
   @Patch(':id')

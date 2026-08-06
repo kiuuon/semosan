@@ -12,13 +12,3 @@ export const TRIP_MEMBER_ROLE = {
 } as const;
 
 export type TripMemberRole = (typeof TRIP_MEMBER_ROLE)[keyof typeof TRIP_MEMBER_ROLE];
-
-export const TRIP_STOP_CATEGORY = {
-  RESTAURANT: 'restaurant',
-  ATTRACTION: 'attraction',
-  LODGING: 'lodging',
-  MEETUP: 'meetup',
-  OTHER: 'other',
-} as const;
-
-export type TripStopCategory = (typeof TRIP_STOP_CATEGORY)[keyof typeof TRIP_STOP_CATEGORY];
