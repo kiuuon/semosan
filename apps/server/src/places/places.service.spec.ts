@@ -1,4 +1,4 @@
-import { InternalServerErrorException } from '@nestjs/common';
+import { InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 
@@ -192,5 +192,135 @@ describe('PlacesService', () => {
     expect(result.items.map((item) => item.id)).toEqual(['1001', '1002', '1003']);
     expect(result.totalCount).toBe(30);
     expect(result.hasNext).toBe(true);
+  });
+
+  describe('getDetail', () => {
+    it('공통/소개/반복/이미지 API를 호출하고 정규화한다', async () => {
+      configService.get.mockReturnValue('test-tour-key');
+      fetchMock
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            response: {
+              header: { resultCode: '0000', resultMsg: 'OK' },
+              body: {
+                items: {
+                  item: {
+                    contentid: '2733967',
+                    contenttypeid: '12',
+                    title: '가회동성당',
+                    addr1: '서울특별시 종로구 북촌로 57',
+                    homepage: '<a href="https://gahoe.or.kr">홈페이지</a>',
+                    firstimage: 'https://example.com/main.jpg',
+                    mapx: '126.98',
+                    mapy: '37.58',
+                    overview: '소개입니다.<br>두 번째 줄',
+                  },
+                },
+              },
+            },
+          }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            response: {
+              header: { resultCode: '0000', resultMsg: 'OK' },
+              body: {
+                items: {
+                  item: {
+                    contentid: '2733967',
+                    contenttypeid: '12',
+                    infocenter: '02-763-1570',
+                    restdate: '매주 월요일',
+                    usetime: '10:00~18:00<br>월요일 휴무',
+                    parking: '가능',
+                  },
+                },
+              },
+            },
+          }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            response: {
+              header: { resultCode: '0000', resultMsg: 'OK' },
+              body: {
+                items: {
+                  item: {
+                    contentid: '2733967',
+                    contenttypeid: '12',
+                    infoname: '화장실',
+                    infotext: '있음<br/>남녀구분',
+                  },
+                },
+              },
+            },
+          }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            response: {
+              header: { resultCode: '0000', resultMsg: 'OK' },
+              body: {
+                items: {
+                  item: [
+                    { originimgurl: 'https://example.com/1.jpg' },
+                    { originimgurl: 'https://example.com/main.jpg' },
+                  ],
+                },
+              },
+            },
+          }),
+        });
+
+      const result = await service.getDetail('2733967', { contentTypeId: '12' });
+
+      expect(fetchMock).toHaveBeenCalledTimes(4);
+      expect(fetchMock.mock.calls[0][0]).toContain('/detailCommon2?');
+      expect(fetchMock.mock.calls[1][0]).toContain('/detailIntro2?');
+      expect(fetchMock.mock.calls[2][0]).toContain('/detailInfo2?');
+      expect(fetchMock.mock.calls[3][0]).toContain('/detailImage2?');
+      expect(result).toEqual({
+        id: '2733967',
+        contentTypeId: '12',
+        contentTypeLabel: '관광지',
+        name: '가회동성당',
+        address: '서울특별시 종로구 북촌로 57',
+        overview: '소개입니다.\n두 번째 줄',
+        homepage: 'https://gahoe.or.kr',
+        tel: '02-763-1570',
+        imageUrl: 'https://example.com/main.jpg',
+        images: ['https://example.com/main.jpg', 'https://example.com/1.jpg'],
+        lat: 37.58,
+        lng: 126.98,
+        infos: [
+          { label: '이용시간', value: '10:00~18:00\n월요일 휴무' },
+          { label: '휴무일', value: '매주 월요일' },
+          { label: '문의', value: '02-763-1570' },
+          { label: '주차', value: '가능' },
+        ],
+        extras: [{ label: '화장실', value: '있음\n남녀구분' }],
+      });
+    });
+
+    it('공통정보가 없으면 NotFoundException을 던진다', async () => {
+      configService.get.mockReturnValue('test-tour-key');
+      fetchMock.mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          response: {
+            header: { resultCode: '0000', resultMsg: 'OK' },
+            body: { items: {} },
+          },
+        }),
+      });
+
+      await expect(service.getDetail('999', { contentTypeId: '12' })).rejects.toThrow(
+        new NotFoundException('장소 정보를 찾을 수 없습니다.'),
+      );
+    });
   });
 });

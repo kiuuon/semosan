@@ -1,29 +1,20 @@
-import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-import { LegalDongRegion, SearchPlacesDto, parseRegionsParam } from './dto/search-places.dto';
+import { GetPlaceDetailDto } from './dto/get-place-detail.dto';
+import { SearchPlacesDto, parseRegionsParam } from './dto/search-places.dto';
+import { getContentTypeLabel, mapIntroToInfos, type PlaceInfoItem } from './tour-intro-fields';
 
 const PAGE_SIZE = 20;
 const TOUR_API_BASE_URL = 'https://apis.data.go.kr/B551011/KorService2';
 const MOBILE_OS = 'WEB';
 const MOBILE_APP = 'semosan';
 
-interface TourApiItem {
-  contentid?: string | number;
-  contenttypeid?: string | number;
-  title?: string;
-  addr1?: string;
-  addr2?: string;
-  firstimage?: string;
-  firstimage2?: string;
-  mapx?: string | number;
-  mapy?: string | number;
-  tel?: string;
-}
+type TourApiRecord = Record<string, unknown>;
 
 interface TourApiBody {
   items?: {
-    item?: TourApiItem | TourApiItem[];
+    item?: TourApiRecord | TourApiRecord[];
   };
   numOfRows?: string | number;
   pageNo?: string | number;
@@ -59,6 +50,23 @@ export interface PlaceSearchResult {
   hasNext: boolean;
 }
 
+export interface PlaceDetail {
+  id: string;
+  contentTypeId: string;
+  contentTypeLabel: string;
+  name: string;
+  address: string;
+  overview: string;
+  homepage: string;
+  tel: string;
+  imageUrl: string;
+  images: string[];
+  lat: number | null;
+  lng: number | null;
+  infos: PlaceInfoItem[];
+  extras: PlaceInfoItem[];
+}
+
 @Injectable()
 export class PlacesService {
   private readonly logger = new Logger(PlacesService.name);
@@ -73,12 +81,13 @@ export class PlacesService {
 
     const responses = await Promise.all(
       regions.map((region) =>
-        this.fetchTourApi({
-          page,
-          numOfRows: PAGE_SIZE,
-          keyword,
-          contentTypeId,
-          region,
+        this.fetchTourEndpoint(keyword ? 'searchKeyword2' : 'areaBasedList2', {
+          numOfRows: String(PAGE_SIZE),
+          pageNo: String(page),
+          lDongRegnCd: region.lDongRegnCd,
+          ...(region.lDongSignguCd ? { lDongSignguCd: region.lDongSignguCd } : {}),
+          ...(contentTypeId ? { contentTypeId } : {}),
+          ...(keyword ? { keyword } : {}),
         }),
       ),
     );
@@ -112,32 +121,73 @@ export class PlacesService {
     };
   }
 
-  private async fetchTourApi({
-    page,
-    numOfRows,
-    keyword,
-    contentTypeId,
-    region,
-  }: {
-    page: number;
-    numOfRows: number;
-    keyword: string;
-    contentTypeId?: string;
-    region: LegalDongRegion;
-  }): Promise<TourApiBody | undefined> {
+  async getDetail(id: string, dto: GetPlaceDetailDto): Promise<PlaceDetail> {
+    const contentId = id.trim();
+    const contentTypeId = dto.contentTypeId.trim();
+
+    if (!contentId) {
+      throw new NotFoundException('장소 정보를 찾을 수 없습니다.');
+    }
+
+    const [commonBody, introBody, infoBody, imageBody] = await Promise.all([
+      this.fetchTourEndpoint('detailCommon2', {
+        contentId,
+        numOfRows: '10',
+        pageNo: '1',
+      }),
+      this.fetchTourEndpoint('detailIntro2', {
+        contentId,
+        contentTypeId,
+        numOfRows: '10',
+        pageNo: '1',
+      }),
+      this.fetchTourEndpoint('detailInfo2', {
+        contentId,
+        contentTypeId,
+        numOfRows: '50',
+        pageNo: '1',
+      }),
+      this.fetchTourEndpoint('detailImage2', {
+        contentId,
+        imageYN: 'Y',
+        numOfRows: '30',
+        pageNo: '1',
+      }),
+    ]);
+
+    const common = this.normalizeItems(commonBody?.items?.item)[0];
+    if (!common) {
+      throw new NotFoundException('장소 정보를 찾을 수 없습니다.');
+    }
+
+    const intro = this.normalizeItems(introBody?.items?.item)[0] ?? null;
+    const infoItems = this.normalizeItems(infoBody?.items?.item);
+    const imageItems = this.normalizeItems(imageBody?.items?.item);
+
+    return this.toPlaceDetail({
+      common,
+      intro,
+      infoItems,
+      imageItems,
+      contentTypeId,
+    });
+  }
+
+  private async fetchTourEndpoint(endpoint: string, params: Record<string, string>): Promise<TourApiBody | undefined> {
     const serviceKey = this.configService.get<string>('TOUR_SERVICE_KEY');
     if (!serviceKey) {
       throw new InternalServerErrorException('관광 API 키가 설정되지 않았습니다.');
     }
 
-    const url = this.buildUrl({
+    const searchParams = new URLSearchParams({
       serviceKey,
-      page,
-      numOfRows,
-      keyword,
-      contentTypeId,
-      region,
+      MobileOS: MOBILE_OS,
+      MobileApp: MOBILE_APP,
+      _type: 'json',
+      ...params,
     });
+
+    const url = `${TOUR_API_BASE_URL}/${endpoint}?${searchParams.toString()}`;
 
     let data: TourApiResponse;
     try {
@@ -147,84 +197,158 @@ export class PlacesService {
       }
       data = (await response.json()) as TourApiResponse;
     } catch (error) {
-      this.logger.error('Failed to fetch tour place API', error);
+      this.logger.error(`Failed to fetch tour API (${endpoint})`, error);
       throw new InternalServerErrorException('장소 정보를 불러오지 못했습니다.');
     }
 
     const resultCode = data.response?.header?.resultCode;
     if (resultCode && resultCode !== '0000' && resultCode !== '00') {
-      this.logger.error(`Tour API error: ${data.response?.header?.resultMsg ?? resultCode}`);
+      this.logger.error(`Tour API error (${endpoint}): ${data.response?.header?.resultMsg ?? resultCode}`);
       throw new InternalServerErrorException('장소 정보를 불러오지 못했습니다.');
     }
 
     return data.response?.body;
   }
 
-  private buildUrl({
-    serviceKey,
-    page,
-    numOfRows,
-    keyword,
-    contentTypeId,
-    region,
-  }: {
-    serviceKey: string;
-    page: number;
-    numOfRows: number;
-    keyword: string;
-    contentTypeId?: string;
-    region: LegalDongRegion;
-  }): string {
-    const endpoint = keyword ? 'searchKeyword2' : 'areaBasedList2';
-    const params = new URLSearchParams({
-      serviceKey,
-      numOfRows: String(numOfRows),
-      pageNo: String(page),
-      MobileOS: MOBILE_OS,
-      MobileApp: MOBILE_APP,
-      _type: 'json',
-      lDongRegnCd: region.lDongRegnCd,
-    });
-
-    if (region.lDongSignguCd) {
-      params.set('lDongSignguCd', region.lDongSignguCd);
-    }
-
-    if (contentTypeId) {
-      params.set('contentTypeId', contentTypeId);
-    }
-
-    if (keyword) {
-      params.set('keyword', keyword);
-    }
-
-    return `${TOUR_API_BASE_URL}/${endpoint}?${params.toString()}`;
-  }
-
-  private normalizeItems(item?: TourApiItem | TourApiItem[]): TourApiItem[] {
+  private normalizeItems(item?: TourApiRecord | TourApiRecord[]): TourApiRecord[] {
     if (!item) {
       return [];
     }
     return Array.isArray(item) ? item : [item];
   }
 
-  private toPlaceItem(item: TourApiItem): PlaceSearchItem {
-    const lat = item.mapy === undefined || item.mapy === '' ? null : Number(item.mapy);
-    const lng = item.mapx === undefined || item.mapx === '' ? null : Number(item.mapx);
-    const address = [item.addr1, item.addr2]
-      .map((part) => part?.trim())
-      .filter(Boolean)
-      .join(' ');
+  private toPlaceItem(item: TourApiRecord): PlaceSearchItem {
+    const lat = this.toNumber(item.mapy);
+    const lng = this.toNumber(item.mapx);
 
     return {
-      id: String(item.contentid ?? ''),
-      contentTypeId: String(item.contenttypeid ?? ''),
-      name: item.title?.trim() ?? '',
-      address,
-      imageUrl: item.firstimage?.trim() || item.firstimage2?.trim() || '',
-      lat: Number.isFinite(lat) ? lat : null,
-      lng: Number.isFinite(lng) ? lng : null,
-      tel: item.tel?.trim() ?? '',
+      id: this.asString(item.contentid),
+      contentTypeId: this.asString(item.contenttypeid),
+      name: this.asString(item.title),
+      address: this.joinAddress(item.addr1, item.addr2),
+      imageUrl: this.asString(item.firstimage) || this.asString(item.firstimage2),
+      lat,
+      lng,
+      tel: this.asString(item.tel),
     };
+  }
+
+  private toPlaceDetail({
+    common,
+    intro,
+    infoItems,
+    imageItems,
+    contentTypeId,
+  }: {
+    common: TourApiRecord;
+    intro: TourApiRecord | null;
+    infoItems: TourApiRecord[];
+    imageItems: TourApiRecord[];
+    contentTypeId: string;
+  }): PlaceDetail {
+    const resolvedTypeId = this.asString(common.contenttypeid) || contentTypeId;
+    const imageUrl = this.asString(common.firstimage) || this.asString(common.firstimage2);
+    const gallery = imageItems
+      .map((item) => this.asString(item.originimgurl) || this.asString(item.smallimageurl))
+      .filter(Boolean);
+    const images = Array.from(new Set([imageUrl, ...gallery].filter(Boolean)));
+
+    const tel =
+      this.asString(common.tel) ||
+      this.asString(intro?.infocenter) ||
+      this.asString(intro?.infocenterculture) ||
+      this.asString(intro?.sponsor1tel) ||
+      this.asString(intro?.infocenterleports) ||
+      this.asString(intro?.infocenterlodging) ||
+      this.asString(intro?.infocentershopping) ||
+      this.asString(intro?.infocenterfood) ||
+      this.asString(intro?.infocentertourcourse);
+
+    return {
+      id: this.asString(common.contentid),
+      contentTypeId: resolvedTypeId,
+      contentTypeLabel: getContentTypeLabel(resolvedTypeId),
+      name: this.asString(common.title),
+      address: this.joinAddress(common.addr1, common.addr2),
+      overview: this.cleanTourText(this.asString(common.overview)),
+      homepage: this.extractHomepage(this.asString(common.homepage)),
+      tel,
+      imageUrl,
+      images,
+      lat: this.toNumber(common.mapy),
+      lng: this.toNumber(common.mapx),
+      infos: mapIntroToInfos(resolvedTypeId, intro).map((item) => ({
+        ...item,
+        value: this.cleanTourText(item.value),
+      })),
+      extras: infoItems
+        .map((item) => ({
+          label: this.asString(item.infoname),
+          value: this.cleanTourText(this.asString(item.infotext)),
+        }))
+        .filter((item) => item.label && item.value),
+    };
+  }
+
+  private joinAddress(...parts: unknown[]): string {
+    return parts
+      .map((part) => this.asString(part))
+      .filter(Boolean)
+      .join(' ');
+  }
+
+  private asString(value: unknown): string {
+    if (value === undefined || value === null) {
+      return '';
+    }
+    return String(value).trim();
+  }
+
+  private toNumber(value: unknown): number | null {
+    if (value === undefined || value === null || value === '') {
+      return null;
+    }
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  private extractHomepage(raw: string): string {
+    if (!raw) {
+      return '';
+    }
+
+    const hrefMatch = raw.match(/href=["']([^"']+)["']/i);
+    if (hrefMatch?.[1]) {
+      return hrefMatch[1].trim();
+    }
+
+    return this.cleanTourText(raw);
+  }
+
+  private cleanTourText(raw: string): string {
+    if (!raw) {
+      return '';
+    }
+
+    let text = raw.trim();
+    for (let i = 0; i < 2; i += 1) {
+      text = text
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&#x([0-9a-f]+);/gi, (_, hex: string) => String.fromCodePoint(Number.parseInt(hex, 16)))
+        .replace(/&#(\d+);/g, (_, dec: string) => String.fromCodePoint(Number.parseInt(dec, 10)));
+    }
+
+    return text
+      .replace(/<br\b[^>]*>/gi, '\n')
+      .replace(/<\/?[^>]+>/g, '')
+      .replace(/\r\n?/g, '\n')
+      .replace(/[ \t]+\n/g, '\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
   }
 }

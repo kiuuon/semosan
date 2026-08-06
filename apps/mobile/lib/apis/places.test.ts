@@ -1,5 +1,5 @@
 import getInstance from './instance';
-import { searchPlaces, toPlacesRegionsParam } from './places';
+import { getPlaceDetail, searchPlaces, toPlacesRegionsParam } from './places';
 
 jest.mock('./instance');
 
@@ -83,6 +83,33 @@ describe('places', () => {
           keyword: '궁',
           contentTypeId: '32',
         },
+      });
+    });
+  });
+
+  describe('getPlaceDetail', () => {
+    it('장소 상세 API를 호출한다', async () => {
+      const result = {
+        id: '2733967',
+        contentTypeId: '12',
+        contentTypeLabel: '관광지',
+        name: '가회동성당',
+        address: '서울특별시 종로구',
+        overview: '소개',
+        homepage: 'https://example.com',
+        tel: '02-123-4567',
+        imageUrl: 'https://example.com/main.jpg',
+        images: ['https://example.com/main.jpg'],
+        lat: 37.58,
+        lng: 126.98,
+        infos: [{ label: '이용시간', value: '10:00~18:00' }],
+        extras: [],
+      };
+      mockGet.mockResolvedValue({ data: result });
+
+      await expect(getPlaceDetail({ id: '2733967', contentTypeId: '12' })).resolves.toEqual(result);
+      expect(mockGet).toHaveBeenCalledWith('/places/2733967', {
+        params: { contentTypeId: '12' },
       });
     });
   });

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 
 import Input from '../../../components/common/input/Input';
@@ -39,19 +39,27 @@ const PLACE_CATEGORIES: { key: PlaceCategory; label: string; contentTypeId?: Tou
 ];
 
 export default function TripScheduleScreen() {
+  const queryClient = useQueryClient();
   const params = useLocalSearchParams<{ id?: string }>();
   const tripId = asParam(params.id);
 
   const [keywordInput, setKeywordInput] = useState('');
   const [keyword, setKeyword] = useState('');
   const [category, setCategory] = useState<PlaceCategory>('all');
-  // TODO: 일정 추가 API 연동 전까지 로컬 상태로만 추가 여부를 표시합니다.
-  const [addedPlaceIds, setAddedPlaceIds] = useState<Set<string>>(new Set());
 
   const { data: trip } = useQuery({
     queryKey: ['trip', tripId],
     queryFn: () => getTrip(tripId),
     enabled: tripId.length > 0,
+  });
+
+  // TODO: 일정 추가 API 연동 전까지 로컬 캐시로만 추가 여부를 표시합니다.
+  const { data: addedPlaceIds = [] } = useQuery({
+    queryKey: ['places', 'added', tripId],
+    queryFn: async () => queryClient.getQueryData<string[]>(['places', 'added', tripId]) ?? [],
+    enabled: tripId.length > 0,
+    initialData: [],
+    staleTime: Infinity,
   });
 
   const regions = useMemo(
@@ -89,14 +97,20 @@ export default function TripScheduleScreen() {
   };
 
   const toggleAddedPlace = (placeId: string) => {
-    setAddedPlaceIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(placeId)) {
-        next.delete(placeId);
-      } else {
-        next.add(placeId);
-      }
-      return next;
+    queryClient.setQueryData<string[]>(['places', 'added', tripId], (prev = []) =>
+      prev.includes(placeId) ? prev.filter((id) => id !== placeId) : [...prev, placeId],
+    );
+  };
+
+  const openPlaceDetail = (place: { id: string; contentTypeId: string; name: string }) => {
+    router.push({
+      pathname: '/place/[id]',
+      params: {
+        id: place.id,
+        contentTypeId: place.contentTypeId,
+        name: place.name,
+        tripId,
+      },
     });
   };
 
@@ -180,23 +194,30 @@ export default function TripScheduleScreen() {
               ) : null
             }
             renderItem={({ item }) => {
-              const isAdded = addedPlaceIds.has(item.id);
+              const isAdded = addedPlaceIds.includes(item.id);
 
               return (
                 <View style={styles.card}>
-                  {item.imageUrl ? (
-                    <Image source={{ uri: item.imageUrl }} style={styles.image} />
-                  ) : (
-                    <View style={[styles.image, styles.imagePlaceholder]}>
-                      <Ionicons name="image" size={22} color={colors.stone500} />
+                  <Pressable
+                    style={styles.cardMain}
+                    onPress={() => openPlaceDetail(item)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${item.name} 상세 보기`}
+                  >
+                    {item.imageUrl ? (
+                      <Image source={{ uri: item.imageUrl }} style={styles.image} />
+                    ) : (
+                      <View style={[styles.image, styles.imagePlaceholder]}>
+                        <Ionicons name="image" size={22} color={colors.stone500} />
+                      </View>
+                    )}
+                    <View style={styles.info}>
+                      <Typography.HeadingMd ellipsis>{item.name}</Typography.HeadingMd>
+                      <Typography.Caption color={colors.stone500} ellipsis>
+                        {item.address || '주소 정보 없음'}
+                      </Typography.Caption>
                     </View>
-                  )}
-                  <View style={styles.info}>
-                    <Typography.HeadingMd ellipsis>{item.name}</Typography.HeadingMd>
-                    <Typography.Caption color={colors.stone500} ellipsis>
-                      {item.address || '주소 정보 없음'}
-                    </Typography.Caption>
-                  </View>
+                  </Pressable>
                   <Pressable
                     onPress={() => toggleAddedPlace(item.id)}
                     style={[styles.addButton, isAdded && styles.addButtonActive]}
@@ -279,6 +300,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 8,
     elevation: 2,
+  },
+  cardMain: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
   image: {
     width: 64,

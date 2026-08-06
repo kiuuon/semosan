@@ -26,11 +26,31 @@ export interface PlaceSearchResult {
   hasNext: boolean;
 }
 
+export interface PlaceInfoItem {
+  label: string;
+  value: string;
+}
+
+export interface PlaceDetail {
+  id: string;
+  contentTypeId: string;
+  contentTypeLabel: string;
+  name: string;
+  address: string;
+  overview: string;
+  homepage: string;
+  tel: string;
+  imageUrl: string;
+  images: string[];
+  lat: number | null;
+  lng: number | null;
+  infos: PlaceInfoItem[];
+  extras: PlaceInfoItem[];
+}
+
 export function toPlacesRegionsParam(regions: PlaceSearchRegion[]): string {
   return regions
-    .map((region) =>
-      region.lDongSignguCd ? `${region.lDongRegnCd}:${region.lDongSignguCd}` : region.lDongRegnCd,
-    )
+    .map((region) => (region.lDongSignguCd ? `${region.lDongRegnCd}:${region.lDongSignguCd}` : region.lDongRegnCd))
     .join(',');
 }
 
@@ -52,5 +72,18 @@ export async function searchPlaces(params: {
     },
   });
 
+  return data;
+}
+
+export async function getPlaceDetail(params: {
+  id: string;
+  contentTypeId: TourContentTypeId | string;
+}): Promise<PlaceDetail> {
+  const instance = await getInstance();
+  const { data } = await instance.get<PlaceDetail>(`/places/${params.id}`, {
+    params: {
+      contentTypeId: params.contentTypeId,
+    },
+  });
   return data;
 }
