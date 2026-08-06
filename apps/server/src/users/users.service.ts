@@ -2,13 +2,14 @@ import { BadRequestException, Injectable, InternalServerErrorException, NotFound
 import { InjectModel } from '@nestjs/mongoose';
 import * as bcrypt from 'bcrypt';
 import { Model, Types } from 'mongoose';
-import { randomBytes } from 'crypto';
+import { randomInt } from 'crypto';
 import { getRandomNickname } from '@woowa-babble/random-nickname';
 import { USER_STATUS } from '../common/constants/status';
 import { User, UserDocument } from '../schemas/user.schema';
 import { CreateUserDto } from './dto/create-user.dto';
 
 const BCRYPT_ROUNDS = 10;
+const NICKNAME_SUFFIX_LENGTH = 4;
 
 @Injectable()
 export class UsersService {
@@ -49,8 +50,9 @@ export class UsersService {
       throw new InternalServerErrorException('서버 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
     }
 
-    const suffix = randomBytes(2).toString('hex');
-    const nickname = `${base}-${suffix}`;
+    const max = 10 ** NICKNAME_SUFFIX_LENGTH;
+    const suffix = String(randomInt(0, max)).padStart(NICKNAME_SUFFIX_LENGTH, '0');
+    const nickname = `${base.replace(/\s+/g, '')}${suffix}`;
 
     const user = await this.userModel.create({
       email,

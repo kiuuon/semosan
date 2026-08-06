@@ -26,7 +26,7 @@ describe('UsersService', () => {
     _id: userId,
     email: 'test@example.com',
     password: 'hashed-password',
-    nickname: 'fox-a1b2',
+    nickname: 'fox1234',
     status: USER_STATUS.ACTIVE,
   } as unknown as UserDocument;
 
@@ -49,7 +49,7 @@ describe('UsersService', () => {
     }).compile();
 
     service = module.get(UsersService);
-    (getRandomNickname as jest.Mock).mockReturnValue('fox');
+    (getRandomNickname as jest.Mock).mockReturnValue('cute fox');
     (bcrypt.hash as jest.Mock).mockResolvedValue('hashed-password');
   });
 
@@ -150,7 +150,7 @@ describe('UsersService', () => {
       expect(userModel.create).toHaveBeenCalledWith({
         email: 'test@example.com',
         password: 'hashed-password',
-        nickname: expect.stringMatching(/^fox-[0-9a-f]{4}$/),
+        nickname: expect.stringMatching(/^cutefox\d{4}$/),
         status: USER_STATUS.ACTIVE,
       });
       expect(result).toEqual(user);
