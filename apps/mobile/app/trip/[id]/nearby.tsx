@@ -38,7 +38,7 @@ const PLACE_CATEGORIES: { key: PlaceCategory; label: string; contentTypeId?: Tou
   { key: 'leisure', label: '레포츠', contentTypeId: '28' },
 ];
 
-export default function TripScheduleScreen() {
+export default function TripNearbyScreen() {
   const queryClient = useQueryClient();
   const params = useLocalSearchParams<{ id?: string }>();
   const tripId = asParam(params.id);
@@ -157,8 +157,6 @@ export default function TripScheduleScreen() {
 
   return (
     <View style={styles.container}>
-      <Typography.HeadingMd>일정</Typography.HeadingMd>
-
       <View style={styles.searchArea}>
         <Input
           placeholder="장소 검색"

@@ -9,7 +9,6 @@ export default function TripFeedScreen() {
 
   return (
     <View style={styles.container}>
-      <Typography.HeadingMd>피드</Typography.HeadingMd>
       <Typography.Caption color={colors.stone500}>tripId: {id}</Typography.Caption>
     </View>
   );

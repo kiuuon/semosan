@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-import Typography from '../typography/Typography';
+import Typography from '../../common/typography/Typography';
 import colors from '../../../lib/constants/colors';
 
 type TabBarRoute = {
@@ -36,19 +36,21 @@ type TabBarProps = {
   };
 };
 
+function dismissToHome() {
+  if (router.canDismiss()) {
+    router.dismissTo('/');
+    return;
+  }
+  router.replace('/');
+}
+
 function TabBar({ state, descriptors, navigation }: TabBarProps) {
   return (
     <View style={styles.wrapper}>
       <View style={styles.bar}>
         <Pressable
           style={styles.backButton}
-          onPress={() => {
-            if (router.canGoBack()) {
-              router.back();
-            } else {
-              router.replace('/');
-            }
-          }}
+          onPress={dismissToHome}
           hitSlop={8}
           accessibilityRole="button"
           accessibilityLabel="뒤로가기"

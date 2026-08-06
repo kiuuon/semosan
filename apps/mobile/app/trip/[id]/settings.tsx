@@ -225,8 +225,6 @@ export default function TripSettingsScreen() {
   return (
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-        <Typography.HeadingMd>설정</Typography.HeadingMd>
-
         {isEditing ? (
           <View style={styles.section}>
             <Input label="일정 제목" value={title} onChangeText={setTitle} placeholder="일정 제목" />
