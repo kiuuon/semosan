@@ -17,6 +17,7 @@ import * as Clipboard from 'expo-clipboard';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Calendar, type DateData } from 'react-native-calendars';
 import Toast from 'react-native-toast-message';
+import { Ionicons } from '@expo/vector-icons';
 
 import Button from '../../../components/common/button/Button';
 import Divider from '../../../components/common/divider/Divider';
@@ -257,27 +258,45 @@ export default function TripSettingsScreen() {
           </View>
         ) : (
           <>
-            <View style={styles.section}>
-              <InfoRow label="여정 이름" value={trip.title || '제목 없음'} />
-              <InfoRow label="기간" value={formatPeriod(trip.startDate, trip.endDate)} />
-              <InfoRow label="산 이름" value={trip.mountain.name} />
-              <View style={styles.membersBlock}>
-                <Typography.Caption color={colors.stone500}>참여 멤버</Typography.Caption>
-                <Typography.BodyBase color={colors.stone900}>
-                  {trip.members.map((member) => member.nickname).join(', ') || '없음'}
-                </Typography.BodyBase>
+            <View style={styles.infoSection}>
+              <Typography.Label color={colors.stone500}>여정 정보</Typography.Label>
+              <View style={styles.card}>
+                <InfoRow label="여정 이름" value={trip.title || '제목 없음'} />
+                <Divider marginVertical={0} color={colors.stone100} />
+                <InfoRow label="기간" value={formatPeriod(trip.startDate, trip.endDate)} />
+                <Divider marginVertical={0} color={colors.stone100} />
+                <InfoRow label="산 이름" value={trip.mountain.name} />
               </View>
             </View>
 
-            <View style={styles.actions}>
-              <TouchableOpacity onPress={() => setIsInviteCodeVisible(true)}>
-                <Typography.BodyBase color={colors.forest700}>초대코드 확인하기</Typography.BodyBase>
+            <View style={styles.infoSection}>
+              <Typography.Label color={colors.stone500}>{`참여 멤버 · ${trip.members.length}명`}</Typography.Label>
+              <View style={styles.card}>
+                {trip.members.length === 0 ? (
+                  <View style={styles.memberRow}>
+                    <Typography.BodyBase color={colors.stone500}>참여 멤버가 없습니다.</Typography.BodyBase>
+                  </View>
+                ) : (
+                  trip.members.map((member, index) => (
+                    <View key={member.userId}>
+                      <MemberRow nickname={member.nickname} isOwner={member.userId === trip.ownerId} />
+                      {index < trip.members.length - 1 && <Divider marginVertical={0} color={colors.stone100} />}
+                    </View>
+                  ))
+                )}
+              </View>
+            </View>
+
+            <View style={styles.card}>
+              <TouchableOpacity style={styles.actionRow} onPress={() => setIsInviteCodeVisible(true)}>
+                <Typography.BodyMedium color={colors.forest700}>초대코드 확인하기</Typography.BodyMedium>
+                <Ionicons name="chevron-forward" size={16} color={colors.stone300} />
               </TouchableOpacity>
             </View>
 
             {isOwner && (
-              <>
-                <Divider marginVertical={8} color={colors.stone100} />
+              <View style={styles.infoSection}>
+                <Typography.Label color={colors.stone500}>여정 관리</Typography.Label>
                 <View style={styles.actions}>
                   <Button fullWidth variant="outline" onPress={handleStartEdit}>
                     여정 수정
@@ -286,7 +305,7 @@ export default function TripSettingsScreen() {
                     여정 삭제
                   </Button>
                 </View>
-              </>
+              </View>
             )}
           </>
         )}
@@ -335,7 +354,27 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <View style={styles.infoRow}>
       <Typography.Caption color={colors.stone500}>{label}</Typography.Caption>
-      <Typography.BodyBase color={colors.stone900}>{value}</Typography.BodyBase>
+      <Typography.BodyMedium color={colors.stone900} ellipsis>
+        {value}
+      </Typography.BodyMedium>
+    </View>
+  );
+}
+
+function MemberRow({ nickname, isOwner }: { nickname: string; isOwner: boolean }) {
+  return (
+    <View style={styles.memberRow}>
+      <View style={styles.avatar}>
+        <Typography.Label color={colors.stone700}>{nickname.slice(0, 1)}</Typography.Label>
+      </View>
+      <Typography.BodyMedium color={colors.stone900} style={styles.memberName} ellipsis>
+        {nickname}
+      </Typography.BodyMedium>
+      {isOwner && (
+        <View style={styles.ownerBadge}>
+          <Typography.Caption color={colors.stone500}>방장</Typography.Caption>
+        </View>
+      )}
     </View>
   );
 }
@@ -360,11 +399,62 @@ const styles = StyleSheet.create({
   section: {
     gap: 16,
   },
-  infoRow: {
-    gap: 4,
+  infoSection: {
+    gap: 8,
   },
-  membersBlock: {
-    gap: 4,
+  card: {
+    backgroundColor: colors.white,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.stone100,
+    overflow: 'hidden',
+    shadowColor: colors.stone300,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+  },
+  memberRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  avatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.stone50,
+    borderWidth: 1,
+    borderColor: colors.stone100,
+  },
+  memberName: {
+    flex: 1,
+  },
+  ownerBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.stone300,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
   },
   actions: {
     gap: 12,
