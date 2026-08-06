@@ -15,7 +15,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
@@ -23,6 +23,7 @@ import Toast from 'react-native-toast-message';
 import Button from '../../components/common/button/Button';
 import Typography from '../../components/common/typography/Typography';
 import { getPlaceDetail } from '../../lib/apis/places';
+import { addTripPlace, getTripPlaces, removeTripPlace } from '../../lib/apis/trips';
 import colors from '../../lib/constants/colors';
 
 const IMAGE_HEIGHT = Dimensions.get('window').width * 0.85;
@@ -84,14 +85,14 @@ export default function PlaceDetailScreen() {
     enabled: id.length > 0 && contentTypeId.length > 0,
   });
 
-  const { data: addedPlaceIds = [] } = useQuery({
-    queryKey: ['places', 'added', tripId],
-    queryFn: async () => queryClient.getQueryData<string[]>(['places', 'added', tripId]) ?? [],
+  const { data: tripPlaces = [] } = useQuery({
+    queryKey: ['trip', tripId, 'places'],
+    queryFn: () => getTripPlaces(tripId),
     enabled: tripId.length > 0,
-    initialData: [],
-    staleTime: Infinity,
   });
-  const isAdded = tripId.length > 0 && addedPlaceIds.includes(id);
+
+  const addedTripPlace = useMemo(() => tripPlaces.find((place) => place.externalId === id), [tripPlaces, id]);
+  const isAdded = !!addedTripPlace;
 
   const title = data?.name ?? fallbackName;
   const previewImages = useMemo(() => {
@@ -103,6 +104,45 @@ export default function PlaceDetailScreen() {
   }, [data?.imageUrl, data?.images]);
   const heroImage = previewImages[0] ?? '';
   const gallery = previewImages.slice(1);
+
+  const invalidateTripPlaces = () => {
+    queryClient.invalidateQueries({ queryKey: ['trip', tripId, 'places'] });
+  };
+
+  const { mutate: addPlace, isPending: isAddPending } = useMutation({
+    mutationFn: () => {
+      if (!data || !tripId) {
+        throw new Error('장소 정보가 없습니다.');
+      }
+      return addTripPlace(tripId, {
+        externalId: data.id,
+        contentTypeId: data.contentTypeId,
+        name: data.name,
+        address: data.address,
+        imageUrl: data.imageUrl,
+      });
+    },
+    onSuccess: () => {
+      Toast.show({ type: 'success', text1: '일정에 추가되었습니다.' });
+      invalidateTripPlaces();
+      router.back();
+    },
+  });
+
+  const { mutate: removePlace, isPending: isRemovePending } = useMutation({
+    mutationFn: () => {
+      if (!addedTripPlace || !tripId) {
+        throw new Error('추가된 장소 정보가 없습니다.');
+      }
+      return removeTripPlace(tripId, addedTripPlace._id);
+    },
+    onSuccess: () => {
+      Toast.show({ type: 'success', text1: '일정에서 제거되었습니다.' });
+      invalidateTripPlaces();
+    },
+  });
+
+  const isSchedulePending = isAddPending || isRemovePending;
 
   const openPreview = (index: number) => {
     setPreviewIndex(index);
@@ -117,16 +157,17 @@ export default function PlaceDetailScreen() {
     setPreviewIndex(nextIndex);
   };
 
-  const handleAddToSchedule = () => {
-    if (!data || !tripId) {
+  const handleScheduleAction = () => {
+    if (!data || !tripId || isSchedulePending) {
       return;
     }
 
-    queryClient.setQueryData<string[]>(['places', 'added', tripId], (prev = []) =>
-      prev.includes(data.id) ? prev : [...prev, data.id],
-    );
-    Toast.show({ type: 'success', text1: '일정에 추가되었습니다.' });
-    router.back();
+    if (isAdded) {
+      removePlace();
+      return;
+    }
+
+    addPlace();
   };
 
   return (
@@ -289,8 +330,13 @@ export default function PlaceDetailScreen() {
 
           {tripId ? (
             <View style={styles.footer}>
-              <Button fullWidth disabled={!data || isAdded} onPress={handleAddToSchedule}>
-                {isAdded ? '일정에 추가됨' : '일정에 추가하기'}
+              <Button
+                fullWidth
+                disabled={!data || isSchedulePending}
+                loading={isSchedulePending}
+                onPress={handleScheduleAction}
+              >
+                {isAdded ? '일정에서 제거하기' : '일정에 추가하기'}
               </Button>
             </View>
           ) : null}

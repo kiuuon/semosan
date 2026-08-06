@@ -5,6 +5,13 @@ export const PLACE_COMMENT_STATUS = {
 
 export type PlaceCommentStatus = (typeof PLACE_COMMENT_STATUS)[keyof typeof PLACE_COMMENT_STATUS];
 
+export const TRIP_PLACE_STATUS = {
+  ACTIVE: 'active',
+  DELETED: 'deleted',
+} as const;
+
+export type TripPlaceStatus = (typeof TRIP_PLACE_STATUS)[keyof typeof TRIP_PLACE_STATUS];
+
 /** 한국관광공사 KorService2 contentTypeId */
 export const TOUR_CONTENT_TYPE = {
   ATTRACTION: '12',

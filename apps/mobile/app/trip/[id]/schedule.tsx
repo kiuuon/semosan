@@ -1,13 +1,13 @@
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 
 import Input from '../../../components/common/input/Input';
 import Typography from '../../../components/common/typography/Typography';
-import { searchPlaces, type TourContentTypeId } from '../../../lib/apis/places';
-import { getTrip } from '../../../lib/apis/trips';
+import { searchPlaces, type PlaceSearchItem, type TourContentTypeId } from '../../../lib/apis/places';
+import { addTripPlace, getTrip, getTripPlaces, removeTripPlace } from '../../../lib/apis/trips';
 import colors from '../../../lib/constants/colors';
 import { mapRegionToLegalDong } from '../../../lib/utils/mapRegionToLegalDong';
 
@@ -46,6 +46,7 @@ export default function TripScheduleScreen() {
   const [keywordInput, setKeywordInput] = useState('');
   const [keyword, setKeyword] = useState('');
   const [category, setCategory] = useState<PlaceCategory>('all');
+  const [pendingExternalId, setPendingExternalId] = useState<string | null>(null);
 
   const { data: trip } = useQuery({
     queryKey: ['trip', tripId],
@@ -53,14 +54,15 @@ export default function TripScheduleScreen() {
     enabled: tripId.length > 0,
   });
 
-  // TODO: 일정 추가 API 연동 전까지 로컬 캐시로만 추가 여부를 표시합니다.
-  const { data: addedPlaceIds = [] } = useQuery({
-    queryKey: ['places', 'added', tripId],
-    queryFn: async () => queryClient.getQueryData<string[]>(['places', 'added', tripId]) ?? [],
+  const { data: tripPlaces = [] } = useQuery({
+    queryKey: ['trip', tripId, 'places'],
+    queryFn: () => getTripPlaces(tripId),
     enabled: tripId.length > 0,
-    initialData: [],
-    staleTime: Infinity,
   });
+
+  const addedPlacesByExternalId = useMemo(() => {
+    return new Map(tripPlaces.map((place) => [place.externalId, place]));
+  }, [tripPlaces]);
 
   const regions = useMemo(
     () => (trip?.mountain.region ? mapRegionToLegalDong(trip.mountain.region) : []),
@@ -85,6 +87,36 @@ export default function TripScheduleScreen() {
 
   const items = data?.pages.flatMap((page) => page.items) ?? [];
 
+  const invalidateTripPlaces = () => {
+    queryClient.invalidateQueries({ queryKey: ['trip', tripId, 'places'] });
+  };
+
+  const { mutate: addPlace } = useMutation({
+    mutationFn: (item: PlaceSearchItem) =>
+      addTripPlace(tripId, {
+        externalId: item.id,
+        contentTypeId: item.contentTypeId,
+        name: item.name,
+        address: item.address,
+        imageUrl: item.imageUrl,
+      }),
+    onMutate: (item) => {
+      setPendingExternalId(item.id);
+    },
+    onSettled: () => {
+      setPendingExternalId(null);
+      invalidateTripPlaces();
+    },
+  });
+
+  const { mutate: removePlace } = useMutation({
+    mutationFn: (placeId: string) => removeTripPlace(tripId, placeId),
+    onSettled: () => {
+      setPendingExternalId(null);
+      invalidateTripPlaces();
+    },
+  });
+
   const submitKeyword = () => {
     setKeyword(keywordInput.trim());
   };
@@ -96,13 +128,22 @@ export default function TripScheduleScreen() {
     }
   };
 
-  const toggleAddedPlace = (placeId: string) => {
-    queryClient.setQueryData<string[]>(['places', 'added', tripId], (prev = []) =>
-      prev.includes(placeId) ? prev.filter((id) => id !== placeId) : [...prev, placeId],
-    );
+  const toggleAddedPlace = (item: PlaceSearchItem) => {
+    if (pendingExternalId) {
+      return;
+    }
+
+    const added = addedPlacesByExternalId.get(item.id);
+    if (added) {
+      setPendingExternalId(item.id);
+      removePlace(added._id);
+      return;
+    }
+
+    addPlace(item);
   };
 
-  const openPlaceDetail = (place: { id: string; contentTypeId: string; name: string }) => {
+  const openPlaceDetail = (place: PlaceSearchItem) => {
     router.push({
       pathname: '/place/[id]',
       params: {
@@ -194,7 +235,8 @@ export default function TripScheduleScreen() {
               ) : null
             }
             renderItem={({ item }) => {
-              const isAdded = addedPlaceIds.includes(item.id);
+              const isAdded = addedPlacesByExternalId.has(item.id);
+              const isItemPending = pendingExternalId === item.id;
 
               return (
                 <View style={styles.card}>
@@ -219,17 +261,22 @@ export default function TripScheduleScreen() {
                     </View>
                   </Pressable>
                   <Pressable
-                    onPress={() => toggleAddedPlace(item.id)}
+                    onPress={() => toggleAddedPlace(item)}
+                    disabled={isItemPending}
                     style={[styles.addButton, isAdded && styles.addButtonActive]}
                     hitSlop={8}
                     accessibilityRole="button"
                     accessibilityLabel={isAdded ? '일정에서 제거' : '일정에 추가'}
                   >
-                    <Ionicons
-                      name={isAdded ? 'checkmark' : 'add'}
-                      size={18}
-                      color={isAdded ? colors.forest700 : colors.white}
-                    />
+                    {isItemPending ? (
+                      <ActivityIndicator size="small" color={isAdded ? colors.forest700 : colors.white} />
+                    ) : (
+                      <Ionicons
+                        name={isAdded ? 'checkmark' : 'add'}
+                        size={18}
+                        color={isAdded ? colors.forest700 : colors.white}
+                      />
+                    )}
                   </Pressable>
                 </View>
               );

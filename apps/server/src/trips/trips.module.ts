@@ -3,6 +3,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 
 import { AuthModule } from '../auth/auth.module';
 import { FeedPost, FeedPostSchema } from '../schemas/feed-post.schema';
+import { TripPlace, TripPlaceSchema } from '../schemas/trip-place.schema';
 import { Trip, TripSchema } from '../schemas/trip.schema';
 import { User, UserSchema } from '../schemas/user.schema';
 import { TripsController } from './trips.controller';
@@ -13,6 +14,7 @@ import { TripsService } from './trips.service';
     AuthModule,
     MongooseModule.forFeature([
       { name: Trip.name, schema: TripSchema },
+      { name: TripPlace.name, schema: TripPlaceSchema },
       { name: FeedPost.name, schema: FeedPostSchema },
       { name: User.name, schema: UserSchema },
     ]),

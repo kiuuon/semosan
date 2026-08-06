@@ -1,11 +1,20 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { randomBytes } from 'crypto';
 import { Model, Types } from 'mongoose';
 
+import { PLACE_COMMENT_STATUS, TRIP_PLACE_STATUS } from '../common/constants/place';
 import { TRIP_MEMBER_ROLE, TRIP_STATUS } from '../common/constants/trip';
-import { User, UserDocument } from '../schemas/user.schema';
+import { TripPlace, TripPlaceDocument } from '../schemas/trip-place.schema';
 import { Trip, TripDocument } from '../schemas/trip.schema';
+import { User, UserDocument } from '../schemas/user.schema';
+import { AddTripPlaceDto } from './dto/add-trip-place.dto';
 import { CreateTripDto } from './dto/create-trip.dto';
 import { UpdateTripDto } from './dto/update-trip.dto';
 
@@ -17,6 +26,21 @@ export type TripMemberWithNickname = {
   role: string;
   joinedAt: Date;
   nickname: string;
+};
+
+export type TripPlaceResponse = {
+  _id: string;
+  tripId: string;
+  externalId: string;
+  contentTypeId: string;
+  name: string;
+  address?: string;
+  imageUrl?: string;
+  createdBy: string;
+  likedUserIds: string[];
+  commentCount: number;
+  createdAt?: Date;
+  updatedAt?: Date;
 };
 
 export type TripDetailResponse = {
@@ -37,6 +61,7 @@ export type TripDetailResponse = {
 export class TripsService {
   constructor(
     @InjectModel(Trip.name) private readonly tripModel: Model<TripDocument>,
+    @InjectModel(TripPlace.name) private readonly tripPlaceModel: Model<TripPlaceDocument>,
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
   ) {}
 
@@ -77,7 +102,6 @@ export class TripsService {
           joinedAt: new Date(),
         },
       ],
-      stops: [],
     });
   }
 
@@ -126,6 +150,85 @@ export class TripsService {
 
     trip.status = TRIP_STATUS.CANCELLED;
     await trip.save();
+  }
+
+  async findPlaces(tripId: string, userId: string): Promise<TripPlaceResponse[]> {
+    const trip = await this.getActiveTripOrThrow(tripId);
+    this.assertMember(trip, userId);
+
+    const places = await this.tripPlaceModel
+      .find({ tripId: trip._id, status: TRIP_PLACE_STATUS.ACTIVE })
+      .sort({ createdAt: -1 })
+      .exec();
+    return places.map((place) => this.toPlaceResponse(place));
+  }
+
+  async addPlace(tripId: string, userId: string, dto: AddTripPlaceDto): Promise<TripPlaceResponse> {
+    const trip = await this.getActiveTripOrThrow(tripId);
+    this.assertMember(trip, userId);
+
+    const externalId = dto.externalId.trim();
+    const contentTypeId = dto.contentTypeId.trim();
+    const name = dto.name.trim();
+    const address = dto.address?.trim() || undefined;
+    const imageUrl = dto.imageUrl?.trim() || undefined;
+
+    const existing = await this.tripPlaceModel.findOne({ tripId: trip._id, externalId }).exec();
+    if (existing) {
+      if (existing.status === TRIP_PLACE_STATUS.ACTIVE) {
+        throw new ConflictException('이미 일정에 추가된 장소입니다.');
+      }
+
+      existing.status = TRIP_PLACE_STATUS.ACTIVE;
+      existing.contentTypeId = contentTypeId;
+      existing.name = name;
+      existing.address = address;
+      existing.imageUrl = imageUrl;
+      await existing.save();
+
+      return this.toPlaceResponse(existing);
+    }
+
+    try {
+      const place = await this.tripPlaceModel.create({
+        tripId: trip._id,
+        externalId,
+        contentTypeId,
+        name,
+        address,
+        imageUrl,
+        createdBy: new Types.ObjectId(userId),
+        likedUserIds: [],
+        comments: [],
+        status: TRIP_PLACE_STATUS.ACTIVE,
+      });
+
+      return this.toPlaceResponse(place);
+    } catch (error) {
+      if (this.isDuplicateKeyError(error)) {
+        throw new ConflictException('이미 일정에 추가된 장소입니다.');
+      }
+      throw error;
+    }
+  }
+
+  async removePlace(tripId: string, placeId: string, userId: string): Promise<void> {
+    const trip = await this.getActiveTripOrThrow(tripId);
+    this.assertMember(trip, userId);
+
+    if (!Types.ObjectId.isValid(placeId)) {
+      throw new NotFoundException('추가된 장소를 찾을 수 없습니다.');
+    }
+
+    const place = await this.tripPlaceModel
+      .findOne({ _id: placeId, tripId: trip._id, status: TRIP_PLACE_STATUS.ACTIVE })
+      .exec();
+    if (!place) {
+      throw new NotFoundException('추가된 장소를 찾을 수 없습니다.');
+    }
+
+    place.status = TRIP_PLACE_STATUS.DELETED;
+    await place.save();
   }
 
   async joinByInviteCode(userId: string, inviteCode: string): Promise<TripDetailResponse> {
@@ -208,6 +311,27 @@ export class TripsService {
       createdAt: trip.get('createdAt'),
       updatedAt: trip.get('updatedAt'),
     };
+  }
+
+  private toPlaceResponse(place: TripPlaceDocument): TripPlaceResponse {
+    return {
+      _id: place._id.toString(),
+      tripId: place.tripId.toString(),
+      externalId: place.externalId,
+      contentTypeId: place.contentTypeId,
+      name: place.name,
+      address: place.address,
+      imageUrl: place.imageUrl,
+      createdBy: place.createdBy.toString(),
+      likedUserIds: place.likedUserIds.map((id) => id.toString()),
+      commentCount: place.comments.filter((comment) => comment.status === PLACE_COMMENT_STATUS.ACTIVE).length,
+      createdAt: place.get('createdAt'),
+      updatedAt: place.get('updatedAt'),
+    };
+  }
+
+  private isDuplicateKeyError(error: unknown) {
+    return typeof error === 'object' && error !== null && 'code' in error && (error as { code: number }).code === 11000;
   }
 
   private async generateUniqueInviteCode(): Promise<string> {

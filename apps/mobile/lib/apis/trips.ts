@@ -45,6 +45,29 @@ export interface TripDetail extends Trip {
   members: TripMember[];
 }
 
+export interface TripPlace {
+  _id: string;
+  tripId: string;
+  externalId: string;
+  contentTypeId: string;
+  name: string;
+  address?: string;
+  imageUrl?: string;
+  createdBy: string;
+  likedUserIds: string[];
+  commentCount: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface AddTripPlacePayload {
+  externalId: string;
+  contentTypeId: string;
+  name: string;
+  address?: string;
+  imageUrl?: string;
+}
+
 export async function createTrip(payload: CreateTripPayload): Promise<Trip> {
   const instance = await getInstance();
   const response = await instance.post<Trip>('/trips', payload);
@@ -80,4 +103,27 @@ export async function joinTripByInviteCode(inviteCode: string): Promise<TripDeta
     inviteCode: inviteCode.trim().toUpperCase(),
   });
   return response.data;
+}
+
+export async function getTripPlaces(tripId: string): Promise<TripPlace[]> {
+  const instance = await getInstance();
+  const response = await instance.get<TripPlace[]>(`/trips/${tripId}/places`);
+  return response.data;
+}
+
+export async function addTripPlace(tripId: string, payload: AddTripPlacePayload): Promise<TripPlace> {
+  const instance = await getInstance();
+  const response = await instance.post<TripPlace>(`/trips/${tripId}/places`, {
+    externalId: payload.externalId.trim(),
+    contentTypeId: payload.contentTypeId.trim(),
+    name: payload.name.trim(),
+    ...(payload.address?.trim() ? { address: payload.address.trim() } : {}),
+    ...(payload.imageUrl?.trim() ? { imageUrl: payload.imageUrl.trim() } : {}),
+  });
+  return response.data;
+}
+
+export async function removeTripPlace(tripId: string, placeId: string): Promise<void> {
+  const instance = await getInstance();
+  await instance.delete(`/trips/${tripId}/places/${placeId}`);
 }
