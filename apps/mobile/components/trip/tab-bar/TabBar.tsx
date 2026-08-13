@@ -36,26 +36,29 @@ type TabBarProps = {
   };
 };
 
-function dismissToHome() {
-  if (router.canDismiss()) {
-    router.dismissTo('/');
-    return;
-  }
-  router.replace('/');
-}
-
 function TabBar({ state, descriptors, navigation }: TabBarProps) {
+  const currentRoute = state.routes[state.index];
+  const isHomeTab = currentRoute.name === 'index';
+
+  const handleBack = () => {
+    if (isHomeTab) {
+      router.back();
+      return;
+    }
+    navigation.navigate('index', currentRoute.params);
+  };
+
   return (
     <View style={styles.wrapper}>
       <View style={styles.bar}>
         <Pressable
           style={styles.backButton}
-          onPress={dismissToHome}
+          onPress={handleBack}
           hitSlop={8}
           accessibilityRole="button"
           accessibilityLabel="뒤로가기"
         >
-          <Ionicons name="chevron-back" size={22} color={colors.stone900} />
+          <Ionicons name="chevron-back" size={22} color={isHomeTab ? colors.stone900 : colors.stone500} />
         </Pressable>
 
         <View style={styles.tabs}>
