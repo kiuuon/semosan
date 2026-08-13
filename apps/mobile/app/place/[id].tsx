@@ -25,6 +25,7 @@ import Typography from '../../components/common/typography/Typography';
 import { getPlaceDetail } from '../../lib/apis/places';
 import { addTripPlace, getTripPlaces, removeTripPlace } from '../../lib/apis/trips';
 import colors from '../../lib/constants/colors';
+import { confirmRemoveTripPlace } from '../../lib/utils/confirmRemoveTripPlace';
 
 const IMAGE_HEIGHT = Dimensions.get('window').width * 0.85;
 const COLLAPSED_LINES = 3;
@@ -163,7 +164,9 @@ export default function PlaceDetailScreen() {
     }
 
     if (isAdded) {
-      removePlace();
+      confirmRemoveTripPlace(() => {
+        removePlace();
+      });
       return;
     }
 

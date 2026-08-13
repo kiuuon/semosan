@@ -159,8 +159,7 @@ describe('MountainsService', () => {
                 mntnnm: '이미지없는산',
                 mntninfopoflc: '서울특별시',
                 mntninfohght: 100,
-                mntnattchimageseq:
-                  'http://www.forest.go.kr/newkfsweb/cmm/fms/getImage.do?fileSn=1&atchFileId=',
+                mntnattchimageseq: 'http://www.forest.go.kr/newkfsweb/cmm/fms/getImage.do?fileSn=1&atchFileId=',
               },
             },
             totalCount: 1,
@@ -283,8 +282,7 @@ describe('MountainsService', () => {
                     mntnattchimageseq:
                       'http://www.forest.go.kr/newkfsweb/cmm/fms/getImage.do?fileSn=1&atchFileId=FILE_123',
                     mntnsbttlinfo: '수차례 화마가 쓸고 갔던 불의 산',
-                    mntninfodtlinfocont:
-                      '관악산은 서울시 관악구와 금천구에 걸쳐 있다.&lt;BR&gt;위험한 암릉이 있다.',
+                    mntninfodtlinfocont: '관악산은 서울시 관악구와 금천구에 걸쳐 있다.&lt;BR&gt;위험한 암릉이 있다.',
                     pbtrninfodscrt: '지하철이 가장 편리하다. &lt;BR&gt;&amp;gt; 2호선 신림역&#xD;&#xA;버스 이용 가능',
                   },
                 ],

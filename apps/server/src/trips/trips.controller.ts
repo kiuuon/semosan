@@ -14,6 +14,7 @@ import {
 
 import type { AuthenticatedRequest } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { AddTripPlaceCommentDto } from './dto/add-trip-place-comment.dto';
 import { AddTripPlaceDto } from './dto/add-trip-place.dto';
 import { CreateTripDto } from './dto/create-trip.dto';
 import { JoinTripDto } from './dto/join-trip.dto';
@@ -59,6 +60,37 @@ export class TripsController {
   @HttpCode(HttpStatus.NO_CONTENT)
   removePlace(@Req() req: AuthenticatedRequest, @Param('id') id: string, @Param('placeId') placeId: string) {
     return this.tripsService.removePlace(id, placeId, req.user._id.toString());
+  }
+
+  @Post(':id/places/:placeId/like')
+  togglePlaceLike(@Req() req: AuthenticatedRequest, @Param('id') id: string, @Param('placeId') placeId: string) {
+    return this.tripsService.togglePlaceLike(id, placeId, req.user._id.toString());
+  }
+
+  @Get(':id/places/:placeId/comments')
+  findPlaceComments(@Req() req: AuthenticatedRequest, @Param('id') id: string, @Param('placeId') placeId: string) {
+    return this.tripsService.findPlaceComments(id, placeId, req.user._id.toString());
+  }
+
+  @Post(':id/places/:placeId/comments')
+  addPlaceComment(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Param('placeId') placeId: string,
+    @Body() dto: AddTripPlaceCommentDto,
+  ) {
+    return this.tripsService.addPlaceComment(id, placeId, req.user._id.toString(), dto);
+  }
+
+  @Delete(':id/places/:placeId/comments/:commentId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  removePlaceComment(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Param('placeId') placeId: string,
+    @Param('commentId') commentId: string,
+  ) {
+    return this.tripsService.removePlaceComment(id, placeId, commentId, req.user._id.toString());
   }
 
   @Patch(':id')

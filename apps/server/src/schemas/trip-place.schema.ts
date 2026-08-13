@@ -72,5 +72,8 @@ export class TripPlace {
 export const TripPlaceSchema = SchemaFactory.createForClass(TripPlace);
 
 TripPlaceSchema.index({ tripId: 1, status: 1, createdAt: -1 });
-TripPlaceSchema.index({ tripId: 1, externalId: 1 }, { unique: true });
+TripPlaceSchema.index(
+  { tripId: 1, externalId: 1 },
+  { unique: true, partialFilterExpression: { status: TRIP_PLACE_STATUS.ACTIVE } },
+);
 TripPlaceSchema.index({ createdBy: 1 });

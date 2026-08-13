@@ -9,6 +9,7 @@ import Typography from '../../../components/common/typography/Typography';
 import { searchPlaces, type PlaceSearchItem, type TourContentTypeId } from '../../../lib/apis/places';
 import { addTripPlace, getTrip, getTripPlaces, removeTripPlace } from '../../../lib/apis/trips';
 import colors from '../../../lib/constants/colors';
+import { confirmRemoveTripPlace } from '../../../lib/utils/confirmRemoveTripPlace';
 import { mapRegionToLegalDong } from '../../../lib/utils/mapRegionToLegalDong';
 
 function asParam(value: string | string[] | undefined) {
@@ -135,8 +136,10 @@ export default function TripNearbyScreen() {
 
     const added = addedPlacesByExternalId.get(item.id);
     if (added) {
-      setPendingExternalId(item.id);
-      removePlace(added._id);
+      confirmRemoveTripPlace(() => {
+        setPendingExternalId(item.id);
+        removePlace(added._id);
+      });
       return;
     }
 

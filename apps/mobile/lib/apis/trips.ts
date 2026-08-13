@@ -127,3 +127,36 @@ export async function removeTripPlace(tripId: string, placeId: string): Promise<
   const instance = await getInstance();
   await instance.delete(`/trips/${tripId}/places/${placeId}`);
 }
+
+export interface TripPlaceComment {
+  _id: string;
+  userId: string;
+  nickname: string;
+  content: string;
+  createdAt: string;
+}
+
+export async function toggleTripPlaceLike(tripId: string, placeId: string): Promise<TripPlace> {
+  const instance = await getInstance();
+  const response = await instance.post<TripPlace>(`/trips/${tripId}/places/${placeId}/like`);
+  return response.data;
+}
+
+export async function getTripPlaceComments(tripId: string, placeId: string): Promise<TripPlaceComment[]> {
+  const instance = await getInstance();
+  const response = await instance.get<TripPlaceComment[]>(`/trips/${tripId}/places/${placeId}/comments`);
+  return response.data;
+}
+
+export async function addTripPlaceComment(tripId: string, placeId: string, content: string): Promise<TripPlaceComment> {
+  const instance = await getInstance();
+  const response = await instance.post<TripPlaceComment>(`/trips/${tripId}/places/${placeId}/comments`, {
+    content: content.trim(),
+  });
+  return response.data;
+}
+
+export async function removeTripPlaceComment(tripId: string, placeId: string, commentId: string): Promise<void> {
+  const instance = await getInstance();
+  await instance.delete(`/trips/${tripId}/places/${placeId}/comments/${commentId}`);
+}

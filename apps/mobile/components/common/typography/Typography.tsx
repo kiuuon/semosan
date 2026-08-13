@@ -102,12 +102,21 @@ const Typography = {
   /** 배지, 태그, 상태 레이블 */
   Label: createTypography(
     {
-      fontFamily: 'NotoSansKR_700Bold',
+      fontFamily: 'NotoSansKR_500Medium',
       fontSize: 12,
       lineHeight: 12 * 1.4,
       letterSpacing: 12 * 0.1,
     },
     'Label',
+  ),
+  CaptionSm: createTypography(
+    {
+      fontFamily: 'NotoSansKR_500Medium',
+      fontSize: 10,
+      lineHeight: 10 * 1.4,
+      letterSpacing: 10 * 0.1,
+    },
+    'CaptionSm',
   ),
   /** 고도·거리·시간 수치 */
   DataMonoLg: createTypography(

@@ -3,7 +3,9 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
+  OnModuleInit,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { randomBytes } from 'crypto';
@@ -14,6 +16,7 @@ import { TRIP_MEMBER_ROLE, TRIP_STATUS } from '../common/constants/trip';
 import { TripPlace, TripPlaceDocument } from '../schemas/trip-place.schema';
 import { Trip, TripDocument } from '../schemas/trip.schema';
 import { User, UserDocument } from '../schemas/user.schema';
+import { AddTripPlaceCommentDto } from './dto/add-trip-place-comment.dto';
 import { AddTripPlaceDto } from './dto/add-trip-place.dto';
 import { CreateTripDto } from './dto/create-trip.dto';
 import { UpdateTripDto } from './dto/update-trip.dto';
@@ -43,6 +46,14 @@ export type TripPlaceResponse = {
   updatedAt?: Date;
 };
 
+export type TripPlaceCommentResponse = {
+  _id: string;
+  userId: string;
+  nickname: string;
+  content: string;
+  createdAt: Date;
+};
+
 export type TripDetailResponse = {
   _id: string;
   ownerId: string;
@@ -58,12 +69,22 @@ export type TripDetailResponse = {
 };
 
 @Injectable()
-export class TripsService {
+export class TripsService implements OnModuleInit {
+  private readonly logger = new Logger(TripsService.name);
+
   constructor(
     @InjectModel(Trip.name) private readonly tripModel: Model<TripDocument>,
     @InjectModel(TripPlace.name) private readonly tripPlaceModel: Model<TripPlaceDocument>,
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
   ) {}
+
+  async onModuleInit() {
+    try {
+      await this.tripPlaceModel.syncIndexes();
+    } catch (error) {
+      this.logger.warn('Failed to sync TripPlace indexes', error);
+    }
+  }
 
   async create(userId: string, dto: CreateTripDto): Promise<TripDocument> {
     const startDate = new Date(dto.startDate);
@@ -173,20 +194,11 @@ export class TripsService {
     const address = dto.address?.trim() || undefined;
     const imageUrl = dto.imageUrl?.trim() || undefined;
 
-    const existing = await this.tripPlaceModel.findOne({ tripId: trip._id, externalId }).exec();
-    if (existing) {
-      if (existing.status === TRIP_PLACE_STATUS.ACTIVE) {
-        throw new ConflictException('이미 일정에 추가된 장소입니다.');
-      }
-
-      existing.status = TRIP_PLACE_STATUS.ACTIVE;
-      existing.contentTypeId = contentTypeId;
-      existing.name = name;
-      existing.address = address;
-      existing.imageUrl = imageUrl;
-      await existing.save();
-
-      return this.toPlaceResponse(existing);
+    const activeExisting = await this.tripPlaceModel
+      .findOne({ tripId: trip._id, externalId, status: TRIP_PLACE_STATUS.ACTIVE })
+      .exec();
+    if (activeExisting) {
+      throw new ConflictException('이미 일정에 추가된 장소입니다.');
     }
 
     try {
@@ -216,18 +228,111 @@ export class TripsService {
     const trip = await this.getActiveTripOrThrow(tripId);
     this.assertMember(trip, userId);
 
-    if (!Types.ObjectId.isValid(placeId)) {
-      throw new NotFoundException('추가된 장소를 찾을 수 없습니다.');
-    }
-
-    const place = await this.tripPlaceModel
-      .findOne({ _id: placeId, tripId: trip._id, status: TRIP_PLACE_STATUS.ACTIVE })
-      .exec();
-    if (!place) {
-      throw new NotFoundException('추가된 장소를 찾을 수 없습니다.');
-    }
-
+    const place = await this.getActivePlaceOrThrow(tripId, placeId);
     place.status = TRIP_PLACE_STATUS.DELETED;
+    await place.save();
+  }
+
+  async togglePlaceLike(tripId: string, placeId: string, userId: string): Promise<TripPlaceResponse> {
+    const trip = await this.getActiveTripOrThrow(tripId);
+    this.assertMember(trip, userId);
+
+    const place = await this.getActivePlaceOrThrow(tripId, placeId);
+    const userObjectId = new Types.ObjectId(userId);
+    const likedIndex = place.likedUserIds.findIndex((id) => id.toString() === userId);
+
+    if (likedIndex >= 0) {
+      place.likedUserIds.splice(likedIndex, 1);
+    } else {
+      place.likedUserIds.push(userObjectId);
+    }
+
+    await place.save();
+    return this.toPlaceResponse(place);
+  }
+
+  async findPlaceComments(tripId: string, placeId: string, userId: string): Promise<TripPlaceCommentResponse[]> {
+    const trip = await this.getActiveTripOrThrow(tripId);
+    this.assertMember(trip, userId);
+
+    const place = await this.getActivePlaceOrThrow(tripId, placeId);
+    const activeComments = place.comments.filter((comment) => comment.status === PLACE_COMMENT_STATUS.ACTIVE);
+    const commentUserIds = activeComments.map((comment) => comment.userId);
+    const users = await this.userModel
+      .find({ _id: { $in: commentUserIds } })
+      .select('_id nickname')
+      .exec();
+    const nicknameById = new Map(users.map((user) => [user._id.toString(), user.nickname]));
+
+    return activeComments
+      .slice()
+      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+      .map((comment) => ({
+        _id: this.getEmbeddedCommentId(comment),
+        userId: comment.userId.toString(),
+        nickname: nicknameById.get(comment.userId.toString()) ?? '알 수 없음',
+        content: comment.content,
+        createdAt: comment.createdAt,
+      }));
+  }
+
+  async addPlaceComment(
+    tripId: string,
+    placeId: string,
+    userId: string,
+    dto: AddTripPlaceCommentDto,
+  ): Promise<TripPlaceCommentResponse> {
+    const trip = await this.getActiveTripOrThrow(tripId);
+    this.assertMember(trip, userId);
+
+    const place = await this.getActivePlaceOrThrow(tripId, placeId);
+    const content = dto.content.trim();
+    if (!content) {
+      throw new BadRequestException('댓글 내용을 입력해 주세요.');
+    }
+
+    place.comments.push({
+      userId: new Types.ObjectId(userId),
+      content,
+      status: PLACE_COMMENT_STATUS.ACTIVE,
+      createdAt: new Date(),
+    });
+    await place.save();
+
+    const created = place.comments[place.comments.length - 1];
+    const user = await this.userModel.findById(userId).select('nickname').exec();
+
+    return {
+      _id: this.getEmbeddedCommentId(created),
+      userId,
+      nickname: user?.nickname ?? '알 수 없음',
+      content: created.content,
+      createdAt: created.createdAt,
+    };
+  }
+
+  async removePlaceComment(tripId: string, placeId: string, commentId: string, userId: string): Promise<void> {
+    const trip = await this.getActiveTripOrThrow(tripId);
+    this.assertMember(trip, userId);
+
+    if (!Types.ObjectId.isValid(commentId)) {
+      throw new NotFoundException('댓글을 찾을 수 없습니다.');
+    }
+
+    const place = await this.getActivePlaceOrThrow(tripId, placeId);
+    const comment = place.comments.find(
+      (item) => this.getEmbeddedCommentId(item) === commentId && item.status === PLACE_COMMENT_STATUS.ACTIVE,
+    );
+
+    if (!comment) {
+      throw new NotFoundException('댓글을 찾을 수 없습니다.');
+    }
+
+    if (comment.userId.toString() !== userId) {
+      throw new ForbiddenException('본인 댓글만 삭제할 수 있습니다.');
+    }
+
+    comment.status = PLACE_COMMENT_STATUS.DELETED;
     await place.save();
   }
 
@@ -270,6 +375,21 @@ export class TripsService {
     }
 
     return trip;
+  }
+
+  private async getActivePlaceOrThrow(tripId: string, placeId: string): Promise<TripPlaceDocument> {
+    if (!Types.ObjectId.isValid(tripId) || !Types.ObjectId.isValid(placeId)) {
+      throw new NotFoundException('추가된 장소를 찾을 수 없습니다.');
+    }
+
+    const place = await this.tripPlaceModel
+      .findOne({ _id: placeId, tripId: new Types.ObjectId(tripId), status: TRIP_PLACE_STATUS.ACTIVE })
+      .exec();
+    if (!place) {
+      throw new NotFoundException('추가된 장소를 찾을 수 없습니다.');
+    }
+
+    return place;
   }
 
   private assertMember(trip: TripDocument, userId: string): void {
@@ -328,6 +448,11 @@ export class TripsService {
       createdAt: place.get('createdAt'),
       updatedAt: place.get('updatedAt'),
     };
+  }
+
+  private getEmbeddedCommentId(comment: { _id?: Types.ObjectId } | TripPlace['comments'][number]): string {
+    const id = (comment as { _id?: Types.ObjectId })._id;
+    return id?.toString() ?? new Types.ObjectId().toString();
   }
 
   private isDuplicateKeyError(error: unknown) {
