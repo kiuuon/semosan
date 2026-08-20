@@ -109,6 +109,8 @@ describe('SignUp', () => {
 
     await fireEvent.changeText(screen.getByPlaceholderText('비밀번호를 입력하세요'), 'password123');
     await fireEvent.changeText(screen.getByPlaceholderText('비밀번호를 한 번 더 입력하세요'), 'password123');
+    await fireEvent.press(screen.getByLabelText('[필수] 서비스 이용약관 동의'));
+    await fireEvent.press(screen.getByLabelText('[필수] 개인정보처리방침 동의'));
     await fireEvent.press(screen.getByText('회원가입 완료'));
 
     await waitFor(() => {

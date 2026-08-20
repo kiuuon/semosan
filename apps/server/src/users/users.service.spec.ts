@@ -143,6 +143,8 @@ describe('UsersService', () => {
         email: '  Test@Example.com ',
         password: 'password123',
         verificationToken: 'verification-token',
+        agreedTerms: true,
+        agreedPrivacy: true,
       });
 
       expect(bcrypt.hash).toHaveBeenCalledWith('password123', 10);
@@ -152,6 +154,8 @@ describe('UsersService', () => {
         password: 'hashed-password',
         nickname: expect.stringMatching(/^cutefox\d{4}$/),
         status: USER_STATUS.ACTIVE,
+        termsAgreedAt: expect.any(Date),
+        privacyAgreedAt: expect.any(Date),
       });
       expect(result).toEqual(user);
     });
@@ -164,6 +168,8 @@ describe('UsersService', () => {
           email: 'test@example.com',
           password: 'password123',
           verificationToken: 'verification-token',
+          agreedTerms: true,
+          agreedPrivacy: true,
         }),
       ).rejects.toThrow(new InternalServerErrorException('서버 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.'));
 

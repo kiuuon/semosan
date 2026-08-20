@@ -34,6 +34,12 @@ export class User {
     required: true,
   })
   status: string;
+
+  @Prop({ type: Date })
+  termsAgreedAt?: Date;
+
+  @Prop({ type: Date })
+  privacyAgreedAt?: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

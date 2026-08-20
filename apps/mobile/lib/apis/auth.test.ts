@@ -81,6 +81,8 @@ describe('auth', () => {
         email: 'test@example.com',
         password: 'password',
         verificationToken: 'verification-token',
+        agreedTerms: true,
+        agreedPrivacy: true,
       });
       expect(setTokens).toHaveBeenCalledWith('access-token', 'refresh-token');
     });

@@ -20,6 +20,8 @@ describe('UsersController', () => {
     email: 'test@example.com',
     password: 'password123',
     verificationToken: 'verification-token',
+    agreedTerms: true,
+    agreedPrivacy: true,
   };
   const tokens = {
     accessToken: 'access-token',

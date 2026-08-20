@@ -1,10 +1,13 @@
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useMutation } from '@tanstack/react-query';
+import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 
 import Typography from '../../common/typography/Typography';
 import { EmailVerificationType, resetPassword, signUp } from '../../../lib/apis/auth';
+import colors from '../../../lib/constants/colors';
 import Button from '../../common/button/Button';
 import Input from '../../common/input/Input';
 import PasswordRequirements from '../password-requirements/PasswordRequirements';
@@ -29,15 +32,62 @@ interface PasswordFormProps {
   onComplete: () => void;
 }
 
+function ConsentRow({
+  checked,
+  onToggle,
+  label,
+  linkLabel,
+  onPressLink,
+}: {
+  checked: boolean;
+  onToggle: () => void;
+  label: string;
+  linkLabel?: string;
+  onPressLink?: () => void;
+}) {
+  return (
+    <View style={styles.consentRow}>
+      <Pressable
+        onPress={onToggle}
+        hitSlop={8}
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked }}
+        accessibilityLabel={label}
+        style={styles.consentCheck}
+      >
+        <Ionicons
+          name={checked ? 'checkbox' : 'square-outline'}
+          size={22}
+          color={checked ? colors.forest700 : colors.stone300}
+        />
+        <Typography.BodyBase color={colors.stone700} style={styles.consentLabel}>
+          {label}
+        </Typography.BodyBase>
+      </Pressable>
+      {linkLabel && onPressLink ? (
+        <Pressable onPress={onPressLink} hitSlop={8} accessibilityRole="link">
+          <Typography.Caption color={colors.stone500} style={styles.consentLink}>
+            {linkLabel}
+          </Typography.Caption>
+        </Pressable>
+      ) : null}
+    </View>
+  );
+}
+
 function PasswordForm({ type, email, verificationToken, onComplete }: PasswordFormProps) {
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
+  const [agreedTerms, setAgreedTerms] = useState(false);
+  const [agreedPrivacy, setAgreedPrivacy] = useState(false);
 
   const copy = FORM_COPY[type];
+  const isSignup = type === 'SIGNUP';
 
   const hasMinLength = password.length >= 8;
   const hasLetter = /[a-zA-Z]/.test(password);
   const hasNumber = /[0-9]/.test(password);
+  const agreedAll = agreedTerms && agreedPrivacy;
 
   const { mutate: submit, isPending: isSubmitting } = useMutation({
     mutationFn: async () => {
@@ -53,11 +103,25 @@ function PasswordForm({ type, email, verificationToken, onComplete }: PasswordFo
     },
   });
 
+  function handleToggleAll() {
+    const next = !(agreedTerms && agreedPrivacy);
+    setAgreedTerms(next);
+    setAgreedPrivacy(next);
+  }
+
   function handleSubmit() {
     if (!verificationToken) {
       Toast.show({
         type: 'error',
         text1: '이메일 인증이 필요합니다.',
+      });
+      return;
+    }
+
+    if (isSignup && !agreedAll) {
+      Toast.show({
+        type: 'error',
+        text1: '필수 약관에 동의해 주세요.',
       });
       return;
     }
@@ -99,11 +163,39 @@ function PasswordForm({ type, email, verificationToken, onComplete }: PasswordFo
             }
           />
         </View>
+
+        {isSignup ? (
+          <View style={styles.consentContainer}>
+            <ConsentRow checked={agreedAll} onToggle={handleToggleAll} label="전체 동의" />
+            <View style={styles.consentDivider} />
+            <ConsentRow
+              checked={agreedTerms}
+              onToggle={() => setAgreedTerms((prev) => !prev)}
+              label="[필수] 서비스 이용약관 동의"
+              linkLabel="보기"
+              onPressLink={() => router.push('/terms')}
+            />
+            <ConsentRow
+              checked={agreedPrivacy}
+              onToggle={() => setAgreedPrivacy((prev) => !prev)}
+              label="[필수] 개인정보처리방침 동의"
+              linkLabel="보기"
+              onPressLink={() => router.push('/privacy')}
+            />
+          </View>
+        ) : null}
       </View>
 
       <Button
         onPress={handleSubmit}
-        disabled={isSubmitting || !hasMinLength || !hasLetter || !hasNumber || password !== passwordConfirm}
+        disabled={
+          isSubmitting ||
+          !hasMinLength ||
+          !hasLetter ||
+          !hasNumber ||
+          password !== passwordConfirm ||
+          (isSignup && !agreedAll)
+        }
         loading={isSubmitting}
         fullWidth
       >
@@ -129,6 +221,31 @@ const styles = StyleSheet.create({
   },
   passwordContainer: {
     gap: 8,
+  },
+  consentContainer: {
+    gap: 12,
+  },
+  consentDivider: {
+    height: 1,
+    backgroundColor: colors.stone100,
+  },
+  consentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  consentCheck: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  consentLabel: {
+    flex: 1,
+  },
+  consentLink: {
+    textDecorationLine: 'underline',
   },
 });
 

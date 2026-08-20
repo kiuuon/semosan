@@ -6,6 +6,23 @@ import { renderWithProviders } from '../../../test-utils/render';
 
 import PasswordForm from './PasswordForm';
 
+jest.mock('expo-router', () => ({
+  router: {
+    push: jest.fn(),
+    back: jest.fn(),
+    replace: jest.fn(),
+  },
+}));
+
+jest.mock('@expo/vector-icons', () => {
+  const { Text } = jest.requireActual<typeof import('react-native')>('react-native');
+  const MockIcon = ({ name }: { name: string }) => <Text>{name}</Text>;
+  return {
+    Ionicons: MockIcon,
+    MaterialIcons: MockIcon,
+  };
+});
+
 jest.mock('react-native-toast-message', () => ({
   show: jest.fn(),
 }));
@@ -14,6 +31,16 @@ jest.mock('../../../lib/apis/auth', () => ({
   signUp: jest.fn(),
   resetPassword: jest.fn(),
 }));
+
+async function fillValidPassword() {
+  await fireEvent.changeText(screen.getByPlaceholderText('비밀번호를 입력하세요'), 'password123');
+  await fireEvent.changeText(screen.getByPlaceholderText('비밀번호를 한 번 더 입력하세요'), 'password123');
+}
+
+async function agreeRequiredConsents() {
+  await fireEvent.press(screen.getByLabelText('[필수] 서비스 이용약관 동의'));
+  await fireEvent.press(screen.getByLabelText('[필수] 개인정보처리방침 동의'));
+}
 
 describe('PasswordForm', () => {
   const onComplete = jest.fn();
@@ -93,8 +120,8 @@ describe('PasswordForm', () => {
         <PasswordForm type="SIGNUP" email="test@example.com" verificationToken={null} onComplete={onComplete} />,
       );
 
-      await fireEvent.changeText(screen.getByPlaceholderText('비밀번호를 입력하세요'), 'password123');
-      await fireEvent.changeText(screen.getByPlaceholderText('비밀번호를 한 번 더 입력하세요'), 'password123');
+      await fillValidPassword();
+      await agreeRequiredConsents();
       await fireEvent.press(screen.getByText('회원가입 완료'));
 
       expect(Toast.show).toHaveBeenCalledWith({
@@ -102,6 +129,21 @@ describe('PasswordForm', () => {
         text1: '이메일 인증이 필요합니다.',
       });
       expect(signUp).not.toHaveBeenCalled();
+    });
+
+    it('필수 약관에 동의하지 않으면 회원가입 완료 버튼이 비활성화된다', async () => {
+      await renderWithProviders(
+        <PasswordForm
+          type="SIGNUP"
+          email="test@example.com"
+          verificationToken="verification-token"
+          onComplete={onComplete}
+        />,
+      );
+
+      await fillValidPassword();
+
+      expect(screen.getByText('회원가입 완료')).toBeDisabled();
     });
 
     it('회원가입 성공 시 signUp API를 호출하고 onComplete를 호출한다', async () => {
@@ -114,8 +156,8 @@ describe('PasswordForm', () => {
         />,
       );
 
-      await fireEvent.changeText(screen.getByPlaceholderText('비밀번호를 입력하세요'), 'password123');
-      await fireEvent.changeText(screen.getByPlaceholderText('비밀번호를 한 번 더 입력하세요'), 'password123');
+      await fillValidPassword();
+      await agreeRequiredConsents();
       await fireEvent.press(screen.getByText('회원가입 완료'));
 
       await waitFor(() => {

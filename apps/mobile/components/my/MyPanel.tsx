@@ -35,7 +35,7 @@ function MyPanel({ onNavigate }: MyPanelProps) {
     enabled: !!accessToken,
   });
 
-  const handleNavigate = (href: '/auth' | '/edit-my-info' | '/invite-code') => {
+  const handleNavigate = (href: '/auth' | '/edit-my-info' | '/invite-code' | '/terms' | '/privacy' | '/licenses') => {
     onNavigate?.();
     if (href === '/edit-my-info' || href === '/invite-code') {
       navigateWithAuth(href);
@@ -53,8 +53,10 @@ function MyPanel({ onNavigate }: MyPanelProps) {
               <MaterialCommunityIcons name="hiking" size={32} color={colors.stone300} />
             </View>
             <View style={styles.profileInfo}>
-              <Typography.HeadingMd>{user?.nickname}</Typography.HeadingMd>
-              <Typography.Caption color={colors.stone700}>{user?.email}</Typography.Caption>
+              <Typography.HeadingMd ellipsis>{user?.nickname}</Typography.HeadingMd>
+              <Typography.Caption color={colors.stone700} ellipsis>
+                {user?.email}
+              </Typography.Caption>
             </View>
           </View>
         </View>
@@ -85,15 +87,26 @@ function MyPanel({ onNavigate }: MyPanelProps) {
           <Typography.BodyBase>푸시 알림</Typography.BodyBase>
           <Switch />
         </View>
-        <TouchableOpacity style={styles.listItem} onPress={() => {}}>
-          <Typography.BodyBase>문의 하기</Typography.BodyBase>
-          <Ionicons name="chevron-forward" size={20} color={colors.stone300} />
-        </TouchableOpacity>
         <TouchableOpacity
           style={[styles.listItem, { borderBottomWidth: 1, borderBottomColor: colors.stone100 }]}
           onPress={() => {}}
         >
-          <Typography.BodyBase>개인정보 보호</Typography.BodyBase>
+          <Typography.BodyBase>문의 하기</Typography.BodyBase>
+          <Ionicons name="chevron-forward" size={20} color={colors.stone300} />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.listItem} onPress={() => handleNavigate('/terms')}>
+          <Typography.BodyBase>서비스 이용약관</Typography.BodyBase>
+          <Ionicons name="chevron-forward" size={20} color={colors.stone300} />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.listItem} onPress={() => handleNavigate('/privacy')}>
+          <Typography.BodyBase>개인정보처리방침</Typography.BodyBase>
+          <Ionicons name="chevron-forward" size={20} color={colors.stone300} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.listItem, { borderBottomWidth: 1, borderBottomColor: colors.stone100 }]}
+          onPress={() => handleNavigate('/licenses')}
+        >
+          <Typography.BodyBase>오픈소스 라이선스</Typography.BodyBase>
           <Ionicons name="chevron-forward" size={20} color={colors.stone300} />
         </TouchableOpacity>
       </View>
@@ -137,6 +150,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   profileSection: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 16,
@@ -150,6 +164,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   profileInfo: {
+    flex: 1,
+    minWidth: 0,
     gap: 2,
   },
   listContainer: {},

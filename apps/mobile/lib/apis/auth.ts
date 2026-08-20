@@ -59,6 +59,8 @@ export async function signUp(email: string, password: string, verificationToken:
     email: email.trim(),
     password,
     verificationToken,
+    agreedTerms: true,
+    agreedPrivacy: true,
   });
 
   const data = response.data as AuthTokensResponse;

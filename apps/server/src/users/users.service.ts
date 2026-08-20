@@ -54,11 +54,14 @@ export class UsersService {
     const suffix = String(randomInt(0, max)).padStart(NICKNAME_SUFFIX_LENGTH, '0');
     const nickname = `${base.replace(/\s+/g, '')}${suffix}`;
 
+    const agreedAt = new Date();
     const user = await this.userModel.create({
       email,
       password: hashedPassword,
       nickname,
       status: USER_STATUS.ACTIVE,
+      termsAgreedAt: agreedAt,
+      privacyAgreedAt: agreedAt,
     });
 
     return user;
