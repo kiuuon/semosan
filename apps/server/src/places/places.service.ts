@@ -1,14 +1,17 @@
 import { Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
+import { GetConcentrationRateDto } from './dto/get-concentration-rate.dto';
 import { GetPlaceDetailDto } from './dto/get-place-detail.dto';
 import { SearchPlacesDto, parseRegionsParam } from './dto/search-places.dto';
 import { getContentTypeLabel, mapIntroToInfos, type PlaceInfoItem } from './tour-intro-fields';
 
 const PAGE_SIZE = 20;
 const TOUR_API_BASE_URL = 'https://apis.data.go.kr/B551011/KorService2';
+const CNCTR_API_BASE_URL = 'https://apis.data.go.kr/B551011/TatsCnctrRateService';
 const MOBILE_OS = 'WEB';
 const MOBILE_APP = 'semosan';
+const PARTIAL_COVERAGE_MESSAGE = '대략 한달 안의 예보만 제공됩니다. 이후 날짜는 0으로 표시됩니다.';
 
 type TourApiRecord = Record<string, unknown>;
 
@@ -63,8 +66,26 @@ export interface PlaceDetail {
   images: string[];
   lat: number | null;
   lng: number | null;
+  lDongRegnCd: string;
+  lDongSignguCd: string;
   infos: PlaceInfoItem[];
   extras: PlaceInfoItem[];
+}
+
+export type ConcentrationRateStatus = 'available' | 'out_of_range' | 'unavailable';
+
+export interface ConcentrationRatePoint {
+  date: string;
+  rate: number;
+}
+
+export interface ConcentrationRateResult {
+  status: ConcentrationRateStatus;
+  message?: string;
+  placeName?: string;
+  points: ConcentrationRatePoint[];
+  forecastStart?: string;
+  forecastEnd?: string;
 }
 
 @Injectable()
@@ -173,7 +194,86 @@ export class PlacesService {
     });
   }
 
-  private async fetchTourEndpoint(endpoint: string, params: Record<string, string>): Promise<TourApiBody | undefined> {
+  async getConcentrationRate(dto: GetConcentrationRateDto): Promise<ConcentrationRateResult> {
+    const name = dto.name.trim();
+    const areaCd = dto.areaCd.trim();
+    const signguCd = dto.signguCd.trim();
+    const tripStart = this.toYmd(dto.startDate);
+    const tripEnd = this.toYmd(dto.endDate);
+
+    if (!name || !areaCd || !signguCd || !tripStart || !tripEnd) {
+      return { status: 'unavailable', points: [] };
+    }
+
+    if (tripEnd < tripStart) {
+      return { status: 'unavailable', points: [] };
+    }
+
+    let body: TourApiBody | undefined;
+    try {
+      body = await this.fetchTourEndpoint(
+        'tatsCnctrRatedList',
+        {
+          areaCd,
+          signguCd,
+          tAtsNm: name,
+          pageNo: '1',
+          numOfRows: '100',
+        },
+        CNCTR_API_BASE_URL,
+        false,
+      );
+    } catch (error) {
+      this.logger.warn(`Failed to fetch concentration rate for ${name}`, error);
+      return { status: 'unavailable', points: [] };
+    }
+
+    const items = this.normalizeItems(body?.items?.item);
+    const series = items
+      .map((item) => {
+        const date = this.asString(item.baseYmd).replace(/-/g, '');
+        const rate = this.toNumber(item.cnctrRate);
+        const placeName = this.asString(item.tAtsNm);
+        if (!date || rate == null || !placeName) {
+          return null;
+        }
+        return { date, rate, placeName };
+      })
+      .filter((item): item is { date: string; rate: number; placeName: string } => item != null)
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    if (series.length === 0) {
+      return { status: 'unavailable', points: [] };
+    }
+
+    const placeName = series[0]?.placeName ?? name;
+    const forecastStart = series[0]?.date;
+    const forecastEnd = series[series.length - 1]?.date;
+    const rateByDate = new Map(series.map((item) => [item.date, item.rate]));
+
+    const points = this.eachYmd(tripStart, tripEnd).map((date) => ({
+      date,
+      rate: rateByDate.get(date) ?? 0,
+    }));
+
+    const hasMissing = points.some((point) => !rateByDate.has(point.date));
+
+    return {
+      status: 'available',
+      placeName,
+      points,
+      forecastStart,
+      forecastEnd,
+      ...(hasMissing ? { message: PARTIAL_COVERAGE_MESSAGE } : {}),
+    };
+  }
+
+  private async fetchTourEndpoint(
+    endpoint: string,
+    params: Record<string, string>,
+    baseUrl: string = TOUR_API_BASE_URL,
+    throwOnError = true,
+  ): Promise<TourApiBody | undefined> {
     const serviceKey = this.configService.get<string>('TOUR_SERVICE_KEY');
     if (!serviceKey) {
       throw new InternalServerErrorException('관광 API 키가 설정되지 않았습니다.');
@@ -187,7 +287,7 @@ export class PlacesService {
       ...params,
     });
 
-    const url = `${TOUR_API_BASE_URL}/${endpoint}?${searchParams.toString()}`;
+    const url = `${baseUrl}/${endpoint}?${searchParams.toString()}`;
 
     let data: TourApiResponse;
     try {
@@ -198,12 +298,18 @@ export class PlacesService {
       data = (await response.json()) as TourApiResponse;
     } catch (error) {
       this.logger.error(`Failed to fetch tour API (${endpoint})`, error);
+      if (!throwOnError) {
+        throw error;
+      }
       throw new InternalServerErrorException('장소 정보를 불러오지 못했습니다.');
     }
 
     const resultCode = data.response?.header?.resultCode;
     if (resultCode && resultCode !== '0000' && resultCode !== '00') {
       this.logger.error(`Tour API error (${endpoint}): ${data.response?.header?.resultMsg ?? resultCode}`);
+      if (!throwOnError) {
+        throw new Error(data.response?.header?.resultMsg ?? resultCode);
+      }
       throw new InternalServerErrorException('장소 정보를 불러오지 못했습니다.');
     }
 
@@ -277,6 +383,8 @@ export class PlacesService {
       images,
       lat: this.toNumber(common.mapy),
       lng: this.toNumber(common.mapx),
+      lDongRegnCd: this.asString(common.lDongRegnCd) || this.asString(common.ldongregncd),
+      lDongSignguCd: this.asString(common.lDongSignguCd) || this.asString(common.ldongsigngucd),
       infos: mapIntroToInfos(resolvedTypeId, intro).map((item) => ({
         ...item,
         value: this.cleanTourText(item.value),
@@ -288,6 +396,47 @@ export class PlacesService {
         }))
         .filter((item) => item.label && item.value),
     };
+  }
+
+  private toYmd(value: string): string {
+    const trimmed = value.trim();
+    const match = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (match) {
+      return `${match[1]}${match[2]}${match[3]}`;
+    }
+
+    const parsed = new Date(trimmed);
+    if (Number.isNaN(parsed.getTime())) {
+      return '';
+    }
+
+    const year = parsed.getFullYear();
+    const month = String(parsed.getMonth() + 1).padStart(2, '0');
+    const day = String(parsed.getDate()).padStart(2, '0');
+    return `${year}${month}${day}`;
+  }
+
+  private eachYmd(startYmd: string, endYmd: string): string[] {
+    const cursor = new Date(
+      Number(startYmd.slice(0, 4)),
+      Number(startYmd.slice(4, 6)) - 1,
+      Number(startYmd.slice(6, 8)),
+    );
+    const last = new Date(Number(endYmd.slice(0, 4)), Number(endYmd.slice(4, 6)) - 1, Number(endYmd.slice(6, 8)));
+
+    if (Number.isNaN(cursor.getTime()) || Number.isNaN(last.getTime()) || cursor > last) {
+      return [];
+    }
+
+    const dates: string[] = [];
+    while (cursor <= last) {
+      const year = cursor.getFullYear();
+      const month = String(cursor.getMonth() + 1).padStart(2, '0');
+      const day = String(cursor.getDate()).padStart(2, '0');
+      dates.push(`${year}${month}${day}`);
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    return dates;
   }
 
   private joinAddress(...parts: unknown[]): string {

@@ -1,5 +1,6 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
 
+import { GetConcentrationRateDto } from './dto/get-concentration-rate.dto';
 import { GetPlaceDetailDto } from './dto/get-place-detail.dto';
 import { SearchPlacesDto } from './dto/search-places.dto';
 import { PlacesService } from './places.service';
@@ -11,6 +12,11 @@ export class PlacesController {
   @Get('search')
   search(@Query() dto: SearchPlacesDto) {
     return this.placesService.search(dto);
+  }
+
+  @Get('concentration-rate')
+  getConcentrationRate(@Query() dto: GetConcentrationRateDto) {
+    return this.placesService.getConcentrationRate(dto);
   }
 
   @Get(':id')

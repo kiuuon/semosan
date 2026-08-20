@@ -296,6 +296,8 @@ describe('PlacesService', () => {
         images: ['https://example.com/main.jpg', 'https://example.com/1.jpg'],
         lat: 37.58,
         lng: 126.98,
+        lDongRegnCd: '',
+        lDongSignguCd: '',
         infos: [
           { label: '이용시간', value: '10:00~18:00\n월요일 휴무' },
           { label: '휴무일', value: '매주 월요일' },
@@ -321,6 +323,102 @@ describe('PlacesService', () => {
       await expect(service.getDetail('999', { contentTypeId: '12' })).rejects.toThrow(
         new NotFoundException('장소 정보를 찾을 수 없습니다.'),
       );
+    });
+  });
+
+  describe('getConcentrationRate', () => {
+    it('여행 일자에 맞는 집중률만 반환한다', async () => {
+      configService.get.mockReturnValue('test-tour-key');
+      fetchMock.mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          response: {
+            header: { resultCode: '0000', resultMsg: 'OK' },
+            body: {
+              items: {
+                item: [
+                  { tAtsNm: '경복궁', baseYmd: '20260813', cnctrRate: '66.4' },
+                  { tAtsNm: '경복궁', baseYmd: '20260814', cnctrRate: '70.1' },
+                  { tAtsNm: '경복궁', baseYmd: '20260815', cnctrRate: '91.9' },
+                ],
+              },
+            },
+          },
+        }),
+      });
+
+      const result = await service.getConcentrationRate({
+        name: '경복궁',
+        areaCd: '11',
+        signguCd: '11110',
+        startDate: '2026-08-14',
+        endDate: '2026-08-15',
+      });
+
+      expect(result.status).toBe('available');
+      expect(result.points).toEqual([
+        { date: '20260814', rate: 70.1 },
+        { date: '20260815', rate: 91.9 },
+      ]);
+    });
+
+    it('예보 밖 날짜는 0으로 채우고 안내 메시지를 붙인다', async () => {
+      configService.get.mockReturnValue('test-tour-key');
+      fetchMock.mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          response: {
+            header: { resultCode: '0000', resultMsg: 'OK' },
+            body: {
+              items: {
+                item: [
+                  { tAtsNm: '경복궁', baseYmd: '20260813', cnctrRate: '66.4' },
+                  { tAtsNm: '경복궁', baseYmd: '20260814', cnctrRate: '70.1' },
+                ],
+              },
+            },
+          },
+        }),
+      });
+
+      const result = await service.getConcentrationRate({
+        name: '경복궁',
+        areaCd: '11',
+        signguCd: '11110',
+        startDate: '2026-08-14',
+        endDate: '2026-08-16',
+      });
+
+      expect(result.status).toBe('available');
+      expect(result.message).toContain('대략 한달');
+      expect(result.points).toEqual([
+        { date: '20260814', rate: 70.1 },
+        { date: '20260815', rate: 0 },
+        { date: '20260816', rate: 0 },
+      ]);
+    });
+
+    it('매칭 결과가 없으면 unavailable을 반환한다', async () => {
+      configService.get.mockReturnValue('test-tour-key');
+      fetchMock.mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          response: {
+            header: { resultCode: '0000', resultMsg: 'OK' },
+            body: { items: {} },
+          },
+        }),
+      });
+
+      const result = await service.getConcentrationRate({
+        name: '없는장소',
+        areaCd: '11',
+        signguCd: '11110',
+        startDate: '2026-08-14',
+        endDate: '2026-08-15',
+      });
+
+      expect(result).toEqual({ status: 'unavailable', points: [] });
     });
   });
 });

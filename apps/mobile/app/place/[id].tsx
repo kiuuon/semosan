@@ -22,8 +22,9 @@ import Toast from 'react-native-toast-message';
 
 import Button from '../../components/common/button/Button';
 import Typography from '../../components/common/typography/Typography';
+import ConcentrationRateSection from '../../components/place/ConcentrationRateSection';
 import { getPlaceDetail } from '../../lib/apis/places';
-import { addTripPlace, getTripPlaces, removeTripPlace } from '../../lib/apis/trips';
+import { addTripPlace, getTrip, getTripPlaces, removeTripPlace } from '../../lib/apis/trips';
 import colors from '../../lib/constants/colors';
 import { confirmRemoveTripPlace } from '../../lib/utils/confirmRemoveTripPlace';
 
@@ -84,6 +85,12 @@ export default function PlaceDetailScreen() {
     queryKey: ['places', 'detail', id, contentTypeId],
     queryFn: () => getPlaceDetail({ id, contentTypeId }),
     enabled: id.length > 0 && contentTypeId.length > 0,
+  });
+
+  const { data: trip } = useQuery({
+    queryKey: ['trip', tripId],
+    queryFn: () => getTrip(tripId),
+    enabled: tripId.length > 0,
   });
 
   const { data: tripPlaces = [] } = useQuery({
@@ -263,6 +270,10 @@ export default function PlaceDetailScreen() {
                       <Typography.HeadingMd>소개</Typography.HeadingMd>
                       <ExpandableText text={data.overview} />
                     </View>
+                  ) : null}
+
+                  {trip?.startDate && trip?.endDate ? (
+                    <ConcentrationRateSection place={data} startDate={trip.startDate} endDate={trip.endDate} />
                   ) : null}
 
                   {data.infos.length > 0 ? (

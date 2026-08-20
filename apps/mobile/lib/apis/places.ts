@@ -44,9 +44,30 @@ export interface PlaceDetail {
   images: string[];
   lat: number | null;
   lng: number | null;
+  lDongRegnCd: string;
+  lDongSignguCd: string;
   infos: PlaceInfoItem[];
   extras: PlaceInfoItem[];
 }
+
+export type ConcentrationRateStatus = 'available' | 'out_of_range' | 'unavailable';
+
+export interface ConcentrationRatePoint {
+  date: string;
+  rate: number;
+}
+
+export interface ConcentrationRateResult {
+  status: ConcentrationRateStatus;
+  message?: string;
+  placeName?: string;
+  points: ConcentrationRatePoint[];
+  forecastStart?: string;
+  forecastEnd?: string;
+}
+
+/** 집중률 API 대상: 관광지·문화시설·쇼핑 */
+export const CONCENTRATION_CONTENT_TYPE_IDS = new Set<string>(['12', '14', '38']);
 
 export function toPlacesRegionsParam(regions: PlaceSearchRegion[]): string {
   return regions
@@ -84,6 +105,20 @@ export async function getPlaceDetail(params: {
     params: {
       contentTypeId: params.contentTypeId,
     },
+  });
+  return data;
+}
+
+export async function getPlaceConcentrationRate(params: {
+  name: string;
+  areaCd: string;
+  signguCd: string;
+  startDate: string;
+  endDate: string;
+}): Promise<ConcentrationRateResult> {
+  const instance = await getInstance();
+  const { data } = await instance.get<ConcentrationRateResult>('/places/concentration-rate', {
+    params,
   });
   return data;
 }
