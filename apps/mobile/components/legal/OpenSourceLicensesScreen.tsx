@@ -1,34 +1,61 @@
-import { Linking, Pressable, StyleSheet, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Toast from 'react-native-toast-message';
 
 import Header from '../common/header/Header';
 import Typography from '../common/typography/Typography';
 import colors from '../../lib/constants/colors';
+import { OSS_LICENSES, OSS_LICENSES_INTRO } from '../../lib/data/ossLicenses';
 
-const OSS_LICENSES_URL = 'https://github.com/kiuuon/semosan/blob/main/OSS_LICENSES.md';
+async function openRepository(url: string) {
+  try {
+    const canOpen = await Linking.canOpenURL(url);
+    if (!canOpen) {
+      Toast.show({ type: 'error', text1: '링크를 열 수 없습니다.' });
+      return;
+    }
+    await Linking.openURL(url);
+  } catch {
+    Toast.show({ type: 'error', text1: '링크를 열 수 없습니다.' });
+  }
+}
 
 export default function OpenSourceLicensesScreen() {
-  const openLicenses = () => {
-    Linking.openURL(OSS_LICENSES_URL);
-  };
-
   return (
     <View style={styles.root}>
       <Header title="오픈소스 라이선스" />
-      <View style={styles.content}>
-        <Typography.BodyBase color={colors.stone700}>
-          세모산은 다양한 오픈소스 소프트웨어를 사용하여 제공됩니다. 직접 사용하는 패키지와 라이선스
-          목록은 GitHub에서 확인할 수 있습니다.
-        </Typography.BodyBase>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <Typography.BodyBase color={colors.stone700}>{OSS_LICENSES_INTRO}</Typography.BodyBase>
+        <Typography.Caption color={colors.stone500}>
+          하위 의존성 라이선스는 각 패키지 저장소의 고지를 따릅니다.
+        </Typography.Caption>
 
-        <Pressable style={styles.linkRow} onPress={openLicenses} accessibilityRole="link">
-          <View style={styles.linkText}>
-            <Typography.BodyMedium color={colors.forest700}>오픈소스 라이선스 목록 보기</Typography.BodyMedium>
-            <Typography.Caption color={colors.stone500}>github.com/kiuuon/semosan</Typography.Caption>
-          </View>
-          <Ionicons name="open-outline" size={18} color={colors.forest700} />
-        </Pressable>
-      </View>
+        <View style={styles.list}>
+          {OSS_LICENSES.map((item) => {
+            const hasRepo = item.repository.length > 0;
+
+            return (
+              <Pressable
+                key={item.name}
+                style={styles.row}
+                disabled={!hasRepo}
+                onPress={() => {
+                  if (hasRepo) void openRepository(item.repository);
+                }}
+                accessibilityRole={hasRepo ? 'link' : 'text'}
+              >
+                <View style={styles.rowText}>
+                  <Typography.BodyMedium ellipsis>{item.name}</Typography.BodyMedium>
+                  <Typography.Caption color={colors.stone500}>
+                    {item.license} · v{item.version || '-'}
+                  </Typography.Caption>
+                </View>
+                {hasRepo ? <Ionicons name="open-outline" size={16} color={colors.stone300} /> : null}
+              </Pressable>
+            );
+          })}
+        </View>
+      </ScrollView>
     </View>
   );
 }
@@ -41,21 +68,25 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 20,
     paddingTop: 24,
-    gap: 20,
+    paddingBottom: 40,
+    gap: 12,
   },
-  linkRow: {
+  list: {
+    marginTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: colors.stone100,
+  },
+  row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    borderWidth: 1,
-    borderColor: colors.stone100,
-    borderRadius: 12,
-    backgroundColor: colors.stone50,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.stone100,
   },
-  linkText: {
+  rowText: {
     flex: 1,
-    gap: 4,
+    minWidth: 0,
+    gap: 2,
   },
 });

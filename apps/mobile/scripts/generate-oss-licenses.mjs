@@ -6,7 +6,8 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const mobileRoot = path.join(__dirname, '..');
 const repoRoot = path.join(mobileRoot, '../..');
-const outPath = path.join(repoRoot, 'OSS_LICENSES.md');
+const mdOutPath = path.join(repoRoot, 'OSS_LICENSES.md');
+const tsOutPath = path.join(mobileRoot, 'lib/data/ossLicenses.ts');
 const requireFromMobile = createRequire(path.join(mobileRoot, 'package.json'));
 
 const packageJson = JSON.parse(fs.readFileSync(path.join(mobileRoot, 'package.json'), 'utf8'));
@@ -31,7 +32,7 @@ function readPackageMeta(name) {
     return {
       name,
       version: String(pkg.version || ''),
-      licenses: String(pkg.license || 'UNKNOWN'),
+      license: String(pkg.license || 'UNKNOWN'),
       repository: normalizeRepoUrl(pkg.repository),
     };
   } catch (error) {
@@ -39,14 +40,15 @@ function readPackageMeta(name) {
     return {
       name,
       version: '',
-      licenses: 'UNKNOWN',
+      license: 'UNKNOWN',
       repository: '',
     };
   }
 }
 
 const items = directDeps.map(readPackageMeta);
-const lines = [
+
+const mdLines = [
   '# Open Source Licenses',
   '',
   '세모산(Semosan) 앱에서 직접 사용하는 오픈소스 패키지 목록입니다.',
@@ -58,12 +60,39 @@ const lines = [
 
 for (const item of items) {
   const repo = item.repository ? `[link](${item.repository})` : '';
-  lines.push(`| \`${item.name}\` | ${item.version || '-'} | ${item.licenses} | ${repo} |`);
+  mdLines.push(`| \`${item.name}\` | ${item.version || '-'} | ${item.license} | ${repo} |`);
 }
 
-lines.push('');
-fs.writeFileSync(outPath, `${lines.join('\n')}\n`);
-console.log(`Wrote ${items.length} direct packages to ${outPath}`);
+mdLines.push('');
+fs.writeFileSync(mdOutPath, `${mdLines.join('\n')}\n`);
+
+const tsLines = [
+  'export type OssLicenseItem = {',
+  '  name: string;',
+  '  version: string;',
+  '  license: string;',
+  '  repository: string;',
+  '};',
+  '',
+  'export const OSS_LICENSES_INTRO =',
+  "  '세모산은 다양한 오픈소스 소프트웨어를 사용하여 제공됩니다. 아래에 직접 사용하는 패키지와 라이선스를 안내합니다.';",
+  '',
+  'export const OSS_LICENSES: OssLicenseItem[] = [',
+];
+
+for (const item of items) {
+  tsLines.push('  {');
+  tsLines.push(`    name: ${JSON.stringify(item.name)},`);
+  tsLines.push(`    version: ${JSON.stringify(item.version)},`);
+  tsLines.push(`    license: ${JSON.stringify(item.license)},`);
+  tsLines.push(`    repository: ${JSON.stringify(item.repository)},`);
+  tsLines.push('  },');
+}
+
+tsLines.push('];', '');
+fs.writeFileSync(tsOutPath, `${tsLines.join('\n')}\n`);
+
+console.log(`Wrote ${items.length} direct packages to ${mdOutPath} and ${tsOutPath}`);
 
 const missingRepo = items.filter((item) => !item.repository).map((item) => item.name);
 if (missingRepo.length > 0) {
