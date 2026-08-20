@@ -1,48 +1,51 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
-import { spawnSync } from 'node:child_process';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const mobileRoot = path.join(__dirname, '..');
 const repoRoot = path.join(mobileRoot, '../..');
 const outPath = path.join(repoRoot, 'OSS_LICENSES.md');
+const requireFromMobile = createRequire(path.join(mobileRoot, 'package.json'));
 
 const packageJson = JSON.parse(fs.readFileSync(path.join(mobileRoot, 'package.json'), 'utf8'));
-const directDeps = new Set(Object.keys(packageJson.dependencies ?? {}));
+const directDeps = Object.keys(packageJson.dependencies ?? {}).sort();
 
-const result = spawnSync('pnpm', ['licenses', 'list', '--prod', '--json'], {
-  cwd: mobileRoot,
-  encoding: 'utf8',
-});
-
-if (result.status !== 0) {
-  console.error(result.stderr || result.stdout);
-  process.exit(result.status ?? 1);
+function normalizeRepoUrl(repository) {
+  if (!repository) return '';
+  const raw = typeof repository === 'string' ? repository : repository.url || '';
+  return raw
+    .trim()
+    .replace(/^git\+/, '')
+    .replace(/^git:\/\//, 'https://')
+    .replace(/^ssh:\/\/git@/, 'https://')
+    .replace(/^git@github\.com:/, 'https://github.com/')
+    .replace(/\.git$/, '');
 }
 
-const grouped = JSON.parse(result.stdout);
-const byName = new Map();
-
-for (const [license, packages] of Object.entries(grouped)) {
-  for (const pkg of packages) {
-    const name = pkg.name;
-    if (!name || !directDeps.has(name)) continue;
-    const version = Array.isArray(pkg.versions) ? pkg.versions[0] : '';
-    if (!byName.has(name)) {
-      byName.set(name, {
-        name,
-        version: String(version || ''),
-        licenses: pkg.license || license,
-        repository: pkg.homepage || '',
-      });
-    }
+function readPackageMeta(name) {
+  try {
+    const pkgPath = requireFromMobile.resolve(`${name}/package.json`);
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+    return {
+      name,
+      version: String(pkg.version || ''),
+      licenses: String(pkg.license || 'UNKNOWN'),
+      repository: normalizeRepoUrl(pkg.repository),
+    };
+  } catch (error) {
+    console.warn(`Failed to resolve ${name}:`, error.message);
+    return {
+      name,
+      version: '',
+      licenses: 'UNKNOWN',
+      repository: '',
+    };
   }
 }
 
-const items = [...byName.values()].sort((a, b) => a.name.localeCompare(b.name));
-const missing = [...directDeps].filter((name) => !byName.has(name)).sort();
-
+const items = directDeps.map(readPackageMeta);
 const lines = [
   '# Open Source Licenses',
   '',
@@ -61,6 +64,8 @@ for (const item of items) {
 lines.push('');
 fs.writeFileSync(outPath, `${lines.join('\n')}\n`);
 console.log(`Wrote ${items.length} direct packages to ${outPath}`);
-if (missing.length > 0) {
-  console.warn('Missing license info for:', missing.join(', '));
+
+const missingRepo = items.filter((item) => !item.repository).map((item) => item.name);
+if (missingRepo.length > 0) {
+  console.warn('Missing repository URL for:', missingRepo.join(', '));
 }

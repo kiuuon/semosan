@@ -23,6 +23,7 @@ import { UpdateTripDto } from './dto/update-trip.dto';
 
 const INVITE_CODE_BYTES = 4;
 const INVITE_CODE_MAX_RETRY = 5;
+const MAX_TRIP_DAYS = 30;
 
 export type TripMemberWithNickname = {
   userId: string;
@@ -98,6 +99,8 @@ export class TripsService implements OnModuleInit {
       throw new BadRequestException('종료일은 시작일 이후여야 합니다.');
     }
 
+    this.assertTripWithinMaxDays(startDate, endDate);
+
     const ownerObjectId = new Types.ObjectId(userId);
     const title = dto.title?.trim() || `${dto.mountain.name.trim()} 산행`;
     const inviteCode = await this.generateUniqueInviteCode();
@@ -156,6 +159,8 @@ export class TripsService implements OnModuleInit {
     if (endDate.getTime() < startDate.getTime()) {
       throw new BadRequestException('종료일은 시작일 이후여야 합니다.');
     }
+
+    this.assertTripWithinMaxDays(startDate, endDate);
 
     trip.title = dto.title.trim();
     trip.startDate = startDate;
@@ -390,6 +395,16 @@ export class TripsService implements OnModuleInit {
     }
 
     return place;
+  }
+
+  private assertTripWithinMaxDays(startDate: Date, endDate: Date): void {
+    const start = Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth(), startDate.getUTCDate());
+    const end = Date.UTC(endDate.getUTCFullYear(), endDate.getUTCMonth(), endDate.getUTCDate());
+    const days = Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1;
+
+    if (days > MAX_TRIP_DAYS) {
+      throw new BadRequestException(`일정은 최대 ${MAX_TRIP_DAYS}일까지 설정할 수 있습니다.`);
+    }
   }
 
   private assertMember(trip: TripDocument, userId: string): void {

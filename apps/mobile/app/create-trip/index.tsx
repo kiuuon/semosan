@@ -11,6 +11,7 @@ import Button from '../../components/common/button/Button';
 import Typography from '../../components/common/typography/Typography';
 import colors from '../../lib/constants/colors';
 import { createTrip } from '../../lib/apis/trips';
+import { getMaxTripEndDate, isWithinMaxTripDays, MAX_TRIP_DAYS } from '../../lib/utils/tripDateRange';
 
 function asParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? (value[0] ?? '') : (value ?? '');
@@ -111,6 +112,14 @@ export default function CreateTripScreen() {
       return;
     }
 
+    if (!isWithinMaxTripDays(startDate, day.dateString)) {
+      Toast.show({
+        type: 'error',
+        text1: `일정은 최대 ${MAX_TRIP_DAYS}일까지 선택할 수 있습니다.`,
+      });
+      return;
+    }
+
     setEndDate(day.dateString);
   }
 
@@ -140,11 +149,14 @@ export default function CreateTripScreen() {
           <View style={styles.section}>
             <Typography.Label>일정 날짜</Typography.Label>
             <Typography.BodyBase color={colors.stone700}>{dateLabel}</Typography.BodyBase>
-            <Typography.Caption color={colors.stone500}>시작일과 종료일을 순서대로 선택해주세요.</Typography.Caption>
+            <Typography.Caption color={colors.stone500}>
+              시작일과 종료일을 순서대로 선택해주세요. 최대 {MAX_TRIP_DAYS}일까지 가능합니다.
+            </Typography.Caption>
             <Calendar
               markingType="period"
               markedDates={markedDates}
               onDayPress={handleDayPress}
+              maxDate={startDate && !endDate ? getMaxTripEndDate(startDate) : undefined}
               theme={{
                 todayTextColor: colors.forest700,
                 arrowColor: colors.forest700,
