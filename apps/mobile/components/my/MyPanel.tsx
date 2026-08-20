@@ -35,9 +35,11 @@ function MyPanel({ onNavigate }: MyPanelProps) {
     enabled: !!accessToken,
   });
 
-  const handleNavigate = (href: '/auth' | '/edit-my-info' | '/invite-code' | '/terms' | '/privacy' | '/licenses') => {
+  const handleNavigate = (
+    href: '/auth' | '/edit-my-info' | '/my-trips' | '/invite-code' | '/terms' | '/privacy' | '/licenses',
+  ) => {
     onNavigate?.();
-    if (href === '/edit-my-info' || href === '/invite-code') {
+    if (href === '/edit-my-info' || href === '/my-trips' || href === '/invite-code') {
       navigateWithAuth(href);
       return;
     }
@@ -72,8 +74,8 @@ function MyPanel({ onNavigate }: MyPanelProps) {
         </View>
       )}
       <View style={styles.listContainer}>
-        <TouchableOpacity style={styles.listItem} onPress={() => handleNavigate('/edit-my-info')}>
-          <Typography.BodyBase>회원정보 수정</Typography.BodyBase>
+        <TouchableOpacity style={styles.listItem} onPress={() => handleNavigate('/my-trips')}>
+          <Typography.BodyBase>내 일정</Typography.BodyBase>
           <Ionicons name="chevron-forward" size={20} color={colors.stone300} />
         </TouchableOpacity>
         <TouchableOpacity
@@ -87,6 +89,10 @@ function MyPanel({ onNavigate }: MyPanelProps) {
           <Typography.BodyBase>푸시 알림</Typography.BodyBase>
           <Switch />
         </View>
+        <TouchableOpacity style={styles.listItem} onPress={() => handleNavigate('/edit-my-info')}>
+          <Typography.BodyBase>회원정보 수정</Typography.BodyBase>
+          <Ionicons name="chevron-forward" size={20} color={colors.stone300} />
+        </TouchableOpacity>
         <TouchableOpacity
           style={[styles.listItem, { borderBottomWidth: 1, borderBottomColor: colors.stone100 }]}
           onPress={() => {}}

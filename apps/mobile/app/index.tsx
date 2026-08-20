@@ -11,6 +11,7 @@ import colors from '../lib/constants/colors';
 import useAuth from '../lib/hooks/useAuth';
 import useRequireAuth from '../lib/hooks/useRequireAuth';
 import { getMyTrips, type Trip } from '../lib/apis/trips';
+import { getTripScheduleStatus } from '../lib/utils/tripSchedule';
 
 const SCREEN_PADDING = 20;
 const CARD_PEEK = 32;
@@ -103,10 +104,15 @@ export default function HomeScreen() {
     enabled: !!accessToken,
   });
 
+  const activeTrips = useMemo(
+    () => trips.filter((trip) => getTripScheduleStatus(trip.startDate, trip.endDate) !== 'past'),
+    [trips],
+  );
+
   const cardWidth = useMemo(() => {
-    if (trips.length === 0) return pageWidth;
+    if (activeTrips.length === 0) return pageWidth;
     return Math.max(pageWidth - CARD_PEEK, 0);
-  }, [pageWidth, trips.length]);
+  }, [pageWidth, activeTrips.length]);
 
   function handleAddTrip() {
     navigateWithAuth('/explore');
@@ -164,7 +170,9 @@ export default function HomeScreen() {
           disableIntervalMomentum
           contentContainerStyle={styles.tripsScrollContent}
         >
-          {accessToken ? trips.map((trip) => <TripCard key={trip._id} trip={trip} width={cardWidth} />) : null}
+          {accessToken
+            ? activeTrips.map((trip) => <TripCard key={trip._id} trip={trip} width={cardWidth} />)
+            : null}
           <AddTripCard width={cardWidth} onPress={handleAddTrip} />
         </ScrollView>
       </View>
