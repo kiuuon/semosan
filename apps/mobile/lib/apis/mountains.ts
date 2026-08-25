@@ -18,6 +18,15 @@ export interface MountainSearchResult {
   hasNext: boolean;
 }
 
+export interface MountainRecommendResult {
+  items: MountainSearchItem[];
+  season: string | null;
+  theme: string | null;
+  keywordLabel: string;
+  headline: string;
+  subline: string;
+}
+
 export interface MountainDetail {
   id: string;
   name: string;
@@ -42,6 +51,12 @@ export async function searchMountains(params: {
       page: params.page ?? 1,
     },
   });
+  return data;
+}
+
+export async function getRecommendedMountains(): Promise<MountainRecommendResult> {
+  const instance = await getInstance();
+  const { data } = await instance.get<MountainRecommendResult>('/mountains/recommend');
   return data;
 }
 

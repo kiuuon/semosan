@@ -16,6 +16,7 @@ describe('MountainsController', () => {
           provide: MountainsService,
           useValue: {
             search: jest.fn(),
+            recommend: jest.fn(),
             getDetail: jest.fn(),
           },
         },
@@ -55,6 +56,22 @@ describe('MountainsController', () => {
 
     await expect(controller.search(dto)).resolves.toEqual(result);
     expect(mountainsService.search).toHaveBeenCalledWith(dto);
+  });
+
+  it('recommend delegates to MountainsService', async () => {
+    const dto = { page: 1 };
+    const result = {
+      items: [],
+      season: '03' as const,
+      theme: null,
+      keywordLabel: '가을',
+      headline: '가을 산이 가장 예쁜 때',
+      subline: '주말 산행으로 딱 좋은 곳이에요',
+    };
+    mountainsService.recommend.mockResolvedValue(result);
+
+    await expect(controller.recommend(dto)).resolves.toEqual(result);
+    expect(mountainsService.recommend).toHaveBeenCalledWith(dto);
   });
 
   it('getDetail delegates to MountainsService', async () => {

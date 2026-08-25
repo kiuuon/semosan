@@ -1,6 +1,7 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
 
 import { GetMountainDetailDto } from './dto/get-mountain-detail.dto';
+import { RecommendMountainsDto } from './dto/recommend-mountains.dto';
 import { SearchMountainsDto } from './dto/search-mountains.dto';
 import { MountainsService } from './mountains.service';
 
@@ -11,6 +12,11 @@ export class MountainsController {
   @Get()
   search(@Query() dto: SearchMountainsDto) {
     return this.mountainsService.search(dto);
+  }
+
+  @Get('recommend')
+  recommend(@Query() dto: RecommendMountainsDto) {
+    return this.mountainsService.recommend(dto);
   }
 
   @Get(':id')

@@ -1,11 +1,24 @@
 import { Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
+import {
+  getCurrentSeasonCode,
+  getRecommendCopy,
+  MOUNTAIN_SEASON_LABELS,
+  MOUNTAIN_THEME_LABELS,
+  pickDailyRecommendKeyword,
+  seededShuffle,
+  type MountainSeasonCode,
+  type MountainThemeCode,
+} from './constants/mountain-recommend';
 import { GetMountainDetailDto } from './dto/get-mountain-detail.dto';
+import { RecommendMountainsDto } from './dto/recommend-mountains.dto';
 import { SearchMountainsDto } from './dto/search-mountains.dto';
 import { MountainSearchType } from './types/mountain-search-type';
 
 const PAGE_SIZE = 20;
+const RECOMMEND_FETCH_SIZE = 20;
+const RECOMMEND_LIMIT = 4;
 const DETAIL_SEARCH_PAGE_SIZE = 100;
 const FOREST_API_BASE_URL = 'https://apis.data.go.kr/1400000/trailInfoService/getforeststoryservice';
 
@@ -66,6 +79,15 @@ export interface MountainDetail {
   transportInfo: string;
 }
 
+export interface MountainRecommendResult {
+  items: MountainSearchItem[];
+  season: MountainSeasonCode | null;
+  theme: MountainThemeCode | null;
+  keywordLabel: string;
+  headline: string;
+  subline: string;
+}
+
 @Injectable()
 export class MountainsService {
   private readonly logger = new Logger(MountainsService.name);
@@ -91,6 +113,77 @@ export class MountainsService {
       pageSize: PAGE_SIZE,
       totalCount,
       hasNext: page * PAGE_SIZE < totalCount,
+    };
+  }
+
+  async recommend(dto: RecommendMountainsDto): Promise<MountainRecommendResult> {
+    const now = new Date();
+    const seed = Math.floor(Math.random() * 1_000_000_000);
+    const hasExplicitFilter = Boolean(dto.season || dto.theme);
+    const daily = hasExplicitFilter ? null : pickDailyRecommendKeyword(now);
+
+    const season = (dto.season ?? (daily?.kind === 'season' ? daily.code : null)) as MountainSeasonCode | null;
+    const theme = (dto.theme ?? (daily?.kind === 'theme' ? daily.code : null)) as MountainThemeCode | null;
+    const keywordLabel =
+      (theme ? MOUNTAIN_THEME_LABELS[theme] : null) ??
+      (season ? MOUNTAIN_SEASON_LABELS[season] : null) ??
+      daily?.label ??
+      MOUNTAIN_SEASON_LABELS[getCurrentSeasonCode(now)];
+
+    const probe = await this.fetchForestApi({
+      page: 1,
+      numOfRows: 1,
+      seasonCode: season ?? undefined,
+      themeCode: theme ?? undefined,
+    });
+    const totalCount = Number(probe?.totalCount ?? 0);
+    const maxPage = Math.max(1, Math.ceil(totalCount / RECOMMEND_FETCH_SIZE));
+    const page = (seed % maxPage) + 1;
+
+    const body = await this.fetchForestApi({
+      page,
+      numOfRows: RECOMMEND_FETCH_SIZE,
+      seasonCode: season ?? undefined,
+      themeCode: theme ?? undefined,
+    });
+
+    const mapped = this.normalizeItems(body?.items?.item).map((item) => this.toMountainItem(item));
+    const withImage = mapped.filter((item) => Boolean(item.imageUrl));
+
+    const seenIds = new Set(withImage.map((item) => item.id));
+    const pool = [...withImage];
+
+    // 사진 있는 산이 부족하면 다른 페이지에서 보충
+    let attempts = 0;
+    while (pool.length < RECOMMEND_LIMIT && maxPage > 1 && attempts < Math.min(4, maxPage - 1)) {
+      attempts += 1;
+      const nextPage = ((seed + attempts) % maxPage) + 1;
+      if (nextPage === page) continue;
+
+      const nextBody = await this.fetchForestApi({
+        page: nextPage,
+        numOfRows: RECOMMEND_FETCH_SIZE,
+        seasonCode: season ?? undefined,
+        themeCode: theme ?? undefined,
+      });
+      const nextMapped = this.normalizeItems(nextBody?.items?.item).map((item) => this.toMountainItem(item));
+      for (const item of nextMapped) {
+        if (!item.imageUrl || seenIds.has(item.id)) continue;
+        seenIds.add(item.id);
+        pool.push(item);
+      }
+    }
+
+    const items = seededShuffle(pool, seed).slice(0, RECOMMEND_LIMIT);
+    const copy = getRecommendCopy(keywordLabel);
+
+    return {
+      items,
+      season,
+      theme,
+      keywordLabel,
+      headline: copy.headline,
+      subline: copy.subline,
     };
   }
 
@@ -127,11 +220,15 @@ export class MountainsService {
     numOfRows,
     type,
     keyword,
+    seasonCode,
+    themeCode,
   }: {
     page: number;
     numOfRows: number;
-    type: MountainSearchType;
-    keyword: string;
+    type?: MountainSearchType;
+    keyword?: string;
+    seasonCode?: string;
+    themeCode?: string;
   }): Promise<ForestApiBody | undefined> {
     const serviceKey = this.configService.get<string>('FOREST_SERVICE_KEY');
     if (!serviceKey) {
@@ -144,6 +241,8 @@ export class MountainsService {
       numOfRows,
       type,
       keyword,
+      seasonCode,
+      themeCode,
     });
 
     let data: ForestApiResponse;
@@ -173,12 +272,16 @@ export class MountainsService {
     numOfRows,
     type,
     keyword,
+    seasonCode,
+    themeCode,
   }: {
     serviceKey: string;
     page: number;
     numOfRows: number;
-    type: MountainSearchType;
-    keyword: string;
+    type?: MountainSearchType;
+    keyword?: string;
+    seasonCode?: string;
+    themeCode?: string;
   }): string {
     const params = new URLSearchParams({
       serviceKey,
@@ -187,10 +290,20 @@ export class MountainsService {
       _type: 'json',
     });
 
-    if (type === MountainSearchType.NAME) {
-      params.set('mntnNm', keyword);
-    } else {
-      params.set('mntnAdd', keyword);
+    if (type && keyword) {
+      if (type === MountainSearchType.NAME) {
+        params.set('mntnNm', keyword);
+      } else {
+        params.set('mntnAdd', keyword);
+      }
+    }
+
+    if (seasonCode) {
+      params.set('mntnInfoSsnCd', seasonCode);
+    }
+
+    if (themeCode) {
+      params.set('mntnInfoThmCd', themeCode);
     }
 
     return `${FOREST_API_BASE_URL}?${params.toString()}`;
