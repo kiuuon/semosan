@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, StyleSheet, View } from 'react-native';
 import MapView, { Marker, type Region } from 'react-native-maps';
 import { router } from 'expo-router';
 import * as Location from 'expo-location';
 import { useQuery } from '@tanstack/react-query';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 
-import Header from '../../common/header/Header';
 import Typography from '../../common/typography/Typography';
 import { getMountainCoordinates } from '../../../lib/apis/mountains';
 import { getPlaceDetail } from '../../../lib/apis/places';
@@ -89,11 +90,30 @@ async function resolveMountainCoord(params: { id: string; name: string; region: 
   }
 }
 
+interface LabeledMapPinProps {
+  color: string;
+  label: string;
+}
+
+function LabeledMapPin({ color, label }: LabeledMapPinProps) {
+  return (
+    <View style={styles.marker}>
+      <View style={styles.markerLabel}>
+        <Typography.CaptionSm color={colors.stone900} ellipsis>
+          {label}
+        </Typography.CaptionSm>
+      </View>
+      <View style={[styles.markerPin, { backgroundColor: color }]} />
+    </View>
+  );
+}
+
 interface TripMapScreenProps {
   tripId: string;
 }
 
 function TripMapScreen({ tripId }: TripMapScreenProps) {
+  const insets = useSafeAreaInsets();
   const mapRef = useRef<MapView>(null);
   const [userRegion, setUserRegion] = useState<Region | null>(null);
 
@@ -190,10 +210,21 @@ function TripMapScreen({ tripId }: TripMapScreenProps) {
 
   const loading = isTripPending || isPending || isResolvingCoords || (Boolean(trip) && isMountainPending);
 
+  const backButton = (
+    <Pressable
+      onPress={() => router.back()}
+      accessibilityRole="button"
+      accessibilityLabel="뒤로가기"
+      style={[styles.backButton, { top: insets.top + 8 }]}
+    >
+      <Ionicons name="chevron-back" size={22} color={colors.stone900} />
+    </Pressable>
+  );
+
   if (Platform.OS === 'web') {
     return (
       <View style={styles.screen}>
-        <Header title="지도" />
+        {backButton}
         <View style={styles.centered}>
           <Typography.BodyBase color={colors.stone500}>지도는 iOS/Android 앱에서 볼 수 있습니다.</Typography.BodyBase>
         </View>
@@ -202,8 +233,7 @@ function TripMapScreen({ tripId }: TripMapScreenProps) {
   }
 
   return (
-    <View style={styles.screen}>
-      <Header title="지도" />
+    <View style={[styles.screen, { marginBottom: -insets.bottom }]}>
       <View style={styles.mapWrap}>
         <MapView
           ref={mapRef}
@@ -216,19 +246,22 @@ function TripMapScreen({ tripId }: TripMapScreenProps) {
           {mountainPoint ? (
             <Marker
               coordinate={mountainPoint}
-              title={trip?.mountain.name ?? mountainCoord?.name}
-              description={mountainCoord?.placeName}
-              pinColor={colors.summit700}
-            />
+              anchor={{ x: 0.5, y: 1 }}
+              tracksViewChanges={Platform.OS === 'ios'}
+              zIndex={2}
+            >
+              <LabeledMapPin color={colors.summit700} label={trip?.mountain.name ?? mountainCoord?.name ?? '산'} />
+            </Marker>
           ) : null}
 
           {mappedPlaces.map((place) => (
             <Marker
               key={place._id}
               coordinate={{ latitude: place.latitude, longitude: place.longitude }}
-              title={place.name}
-              pinColor={colors.forest700}
-              onCalloutPress={() =>
+              anchor={{ x: 0.5, y: 1 }}
+              tracksViewChanges={Platform.OS === 'ios'}
+              zIndex={1}
+              onPress={() =>
                 router.push({
                   pathname: '/place/[id]',
                   params: {
@@ -239,7 +272,9 @@ function TripMapScreen({ tripId }: TripMapScreenProps) {
                   },
                 })
               }
-            />
+            >
+              <LabeledMapPin color={colors.forest700} label={place.name} />
+            </Marker>
           ))}
         </MapView>
 
@@ -250,12 +285,14 @@ function TripMapScreen({ tripId }: TripMapScreenProps) {
         ) : null}
 
         {!loading && mappedPlaces.length === 0 && !mountainPoint ? (
-          <View style={styles.banner} pointerEvents="none">
+          <View style={[styles.banner, { bottom: Math.max(insets.bottom, 16) + 8 }]} pointerEvents="none">
             <Typography.Caption color={colors.stone700}>
               추가한 장소 마커가 없으면 내 위치만 표시됩니다.
             </Typography.Caption>
           </View>
         ) : null}
+
+        {backButton}
       </View>
     </View>
   );
@@ -287,13 +324,50 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 16,
     right: 16,
-    bottom: 24,
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 12,
     backgroundColor: colors.white,
     borderWidth: 1,
     borderColor: colors.stone100,
+  },
+  backButton: {
+    position: 'absolute',
+    left: 16,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.stone100,
+    shadowColor: colors.stone900,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 3,
+    zIndex: 10,
+  },
+  marker: {
+    alignItems: 'center',
+  },
+  markerLabel: {
+    maxWidth: 128,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    marginBottom: 4,
+    borderRadius: 8,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.stone100,
+  },
+  markerPin: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    borderWidth: 2,
+    borderColor: colors.white,
   },
 });
 

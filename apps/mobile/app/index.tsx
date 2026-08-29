@@ -268,25 +268,25 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      <TouchableOpacity
-        style={styles.searchBar}
-        onPress={() => router.push('/explore')}
-        activeOpacity={0.88}
-        accessibilityRole="button"
-        accessibilityLabel="산 탐색하기"
-      >
-        <View style={styles.searchIconWrap}>
-          <Ionicons name="search" size={18} color={colors.forest700} />
-        </View>
-        <View style={styles.searchCopy}>
-          <Typography.BodyMedium color={colors.stone700}>산 탐색하기</Typography.BodyMedium>
-          <Typography.Caption color={colors.stone500}>이름이나 지역으로 찾아보세요</Typography.Caption>
-        </View>
-        <Ionicons name="chevron-forward" size={18} color={colors.stone300} />
-      </TouchableOpacity>
-
       <View style={styles.recommendArea}>
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.recommendScrollContent}>
+          <TouchableOpacity
+            style={styles.searchBar}
+            onPress={() => router.push('/explore')}
+            activeOpacity={0.88}
+            accessibilityRole="button"
+            accessibilityLabel="산 탐색하기"
+          >
+            <View style={styles.searchIconWrap}>
+              <Ionicons name="search" size={18} color={colors.forest700} />
+            </View>
+            <View style={styles.searchCopy}>
+              <Typography.BodyMedium color={colors.stone700}>산 탐색하기</Typography.BodyMedium>
+              <Typography.Caption color={colors.stone500}>이름이나 지역으로 찾아보세요</Typography.Caption>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.stone300} />
+          </TouchableOpacity>
+
           <View style={styles.recommendBand}>
             {isRecommendLoading ? (
               <View style={styles.centered}>
@@ -404,6 +404,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
+    marginHorizontal: SCREEN_PADDING,
     paddingVertical: 14,
     paddingHorizontal: 14,
     borderRadius: 18,
@@ -430,7 +431,6 @@ const styles = StyleSheet.create({
   },
   recommendArea: {
     flex: 1,
-    marginTop: 20,
     marginHorizontal: -SCREEN_PADDING,
   },
   recommendScrollContent: {

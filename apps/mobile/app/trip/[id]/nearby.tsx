@@ -167,6 +167,8 @@ export default function TripNearbyScreen() {
           placeholder="장소 검색"
           value={keywordInput}
           onChangeText={handleChangeKeyword}
+          returnKeyType="search"
+          onSubmitEditing={submitKeyword}
           accessoryRight={
             <Pressable onPress={submitKeyword} hitSlop={8} accessibilityRole="button" accessibilityLabel="검색">
               <Ionicons name="search" size={20} color={colors.stone300} />
