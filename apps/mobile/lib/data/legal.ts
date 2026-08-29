@@ -1,3 +1,5 @@
+import { SUPPORT_EMAIL } from '../constants/support';
+
 export type LegalSection = {
   kind: 'chapter' | 'article';
   title: string;
@@ -123,7 +125,7 @@ export const TERMS_OF_SERVICE = {
       paragraphs: [
         '서비스 이용 관련 문의는 다음의 방법으로 접수합니다.',
         '1. 앱 내 ‘문의하기’',
-        '2. 이메일: kiuuon29@gmail.com',
+        '2. 이메일: ' + SUPPORT_EMAIL,
       ],
     },
     {
@@ -226,15 +228,13 @@ export const PRIVACY_POLICY = {
       paragraphs: [
         '개인정보 처리에 관한 문의는 다음의 방법으로 접수합니다.',
         '1. 앱 내 ‘문의하기’',
-        '2. 이메일: kiuuon29@gmail.com',
+        '2. 이메일: ' + SUPPORT_EMAIL,
       ],
     },
     {
       kind: 'article',
       title: '제10조 (개인정보처리방침의 변경)',
-      paragraphs: [
-        '본 방침을 변경하는 경우 변경 내용과 시행 시점을 서비스 내 공지 등 합리적인 방법으로 안내합니다.',
-      ],
+      paragraphs: ['본 방침을 변경하는 경우 변경 내용과 시행 시점을 서비스 내 공지 등 합리적인 방법으로 안내합니다.'],
     },
     {
       kind: 'article',

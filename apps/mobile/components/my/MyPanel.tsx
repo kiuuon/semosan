@@ -1,4 +1,5 @@
 import { View, StyleSheet, TouchableOpacity, Switch } from 'react-native';
+import { useState } from 'react';
 import { router } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -8,6 +9,7 @@ import useAuth from '../../lib/hooks/useAuth';
 import useRequireAuth from '../../lib/hooks/useRequireAuth';
 import { getMe, logout } from '../../lib/apis/auth';
 import Typography from '../common/typography/Typography';
+import ContactInquiryModal from './ContactInquiryModal';
 
 interface MyPanelProps {
   onNavigate?: () => void;
@@ -17,6 +19,7 @@ function MyPanel({ onNavigate }: MyPanelProps) {
   const { accessToken } = useAuth();
   const { navigateWithAuth } = useRequireAuth();
   const queryClient = useQueryClient();
+  const [isContactOpen, setIsContactOpen] = useState(false);
 
   const { mutate, isPending } = useMutation({
     mutationFn: () => logout(),
@@ -95,7 +98,7 @@ function MyPanel({ onNavigate }: MyPanelProps) {
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.listItem, { borderBottomWidth: 1, borderBottomColor: colors.stone100 }]}
-          onPress={() => {}}
+          onPress={() => setIsContactOpen(true)}
         >
           <Typography.BodyBase>문의 하기</Typography.BodyBase>
           <Ionicons name="chevron-forward" size={20} color={colors.stone300} />
@@ -116,6 +119,13 @@ function MyPanel({ onNavigate }: MyPanelProps) {
           <Ionicons name="chevron-forward" size={20} color={colors.stone300} />
         </TouchableOpacity>
       </View>
+      <ContactInquiryModal
+        visible={isContactOpen}
+        nickname={user?.nickname}
+        email={user?.email}
+        onClose={() => setIsContactOpen(false)}
+        onSubmitted={() => onNavigate?.()}
+      />
       <View style={styles.extraContainer}>
         {accessToken ? (
           <TouchableOpacity onPress={() => mutate()} disabled={isPending}>

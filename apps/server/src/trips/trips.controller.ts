@@ -16,6 +16,7 @@ import type { AuthenticatedRequest } from '../auth/decorators/current-user.decor
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AddTripPlaceCommentDto } from './dto/add-trip-place-comment.dto';
 import { AddTripPlaceDto } from './dto/add-trip-place.dto';
+import { CreateFeedPostDto } from './dto/create-feed-post.dto';
 import { CreateTripDto } from './dto/create-trip.dto';
 import { JoinTripDto } from './dto/join-trip.dto';
 import { UpdateTripDto } from './dto/update-trip.dto';
@@ -91,6 +92,53 @@ export class TripsController {
     @Param('commentId') commentId: string,
   ) {
     return this.tripsService.removePlaceComment(id, placeId, commentId, req.user._id.toString());
+  }
+
+  @Get(':id/posts')
+  findFeedPosts(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
+    return this.tripsService.findFeedPosts(id, req.user._id.toString());
+  }
+
+  @Post(':id/posts')
+  createFeedPost(@Req() req: AuthenticatedRequest, @Param('id') id: string, @Body() dto: CreateFeedPostDto) {
+    return this.tripsService.createFeedPost(id, req.user._id.toString(), dto);
+  }
+
+  @Delete(':id/posts/:postId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  removeFeedPost(@Req() req: AuthenticatedRequest, @Param('id') id: string, @Param('postId') postId: string) {
+    return this.tripsService.removeFeedPost(id, postId, req.user._id.toString());
+  }
+
+  @Post(':id/posts/:postId/like')
+  toggleFeedPostLike(@Req() req: AuthenticatedRequest, @Param('id') id: string, @Param('postId') postId: string) {
+    return this.tripsService.toggleFeedPostLike(id, postId, req.user._id.toString());
+  }
+
+  @Get(':id/posts/:postId/comments')
+  findFeedPostComments(@Req() req: AuthenticatedRequest, @Param('id') id: string, @Param('postId') postId: string) {
+    return this.tripsService.findFeedPostComments(id, postId, req.user._id.toString());
+  }
+
+  @Post(':id/posts/:postId/comments')
+  addFeedPostComment(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Param('postId') postId: string,
+    @Body() dto: AddTripPlaceCommentDto,
+  ) {
+    return this.tripsService.addFeedPostComment(id, postId, req.user._id.toString(), dto);
+  }
+
+  @Delete(':id/posts/:postId/comments/:commentId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  removeFeedPostComment(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Param('postId') postId: string,
+    @Param('commentId') commentId: string,
+  ) {
+    return this.tripsService.removeFeedPostComment(id, postId, commentId, req.user._id.toString());
   }
 
   @Patch(':id')
