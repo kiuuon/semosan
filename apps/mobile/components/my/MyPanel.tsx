@@ -1,4 +1,4 @@
-import { View, StyleSheet, TouchableOpacity, Switch } from 'react-native';
+import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { useState } from 'react';
 import { router } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -88,10 +88,10 @@ function MyPanel({ onNavigate }: MyPanelProps) {
           <Typography.BodyBase>초대코드 입력</Typography.BodyBase>
           <Ionicons name="chevron-forward" size={20} color={colors.stone300} />
         </TouchableOpacity>
-        <View style={styles.listItem}>
+        {/* <View style={styles.listItem}>
           <Typography.BodyBase>푸시 알림</Typography.BodyBase>
           <Switch />
-        </View>
+        </View> */}
         <TouchableOpacity style={styles.listItem} onPress={() => handleNavigate('/edit-my-info')}>
           <Typography.BodyBase>회원정보 수정</Typography.BodyBase>
           <Ionicons name="chevron-forward" size={20} color={colors.stone300} />
