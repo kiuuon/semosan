@@ -1,5 +1,10 @@
 import { Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+
+import { MountainCoord, type MountainCoordDocument } from '../schemas/mountain-coord.schema';
+import { KakaoLocalService } from './kakao-local.service';
 
 import {
   getCurrentSeasonCode,
@@ -12,8 +17,11 @@ import {
   type MountainThemeCode,
 } from './constants/mountain-recommend';
 import { GetMountainDetailDto } from './dto/get-mountain-detail.dto';
+import { GetMountainWeatherDto } from './dto/get-mountain-weather.dto';
 import { RecommendMountainsDto } from './dto/recommend-mountains.dto';
 import { SearchMountainsDto } from './dto/search-mountains.dto';
+import { OpenMeteoService } from './open-meteo.service';
+import { OPEN_METEO_DETAIL_DAYS, pastDaysFromStart, sliceWeatherDays, type WeatherDay } from './open-meteo.util';
 import { MountainSearchType } from './types/mountain-search-type';
 
 const PAGE_SIZE = 20;
@@ -88,11 +96,40 @@ export interface MountainRecommendResult {
   subline: string;
 }
 
+export interface MountainCoordResult {
+  id: string;
+  name: string;
+  region: string;
+  lat: number;
+  lng: number;
+  placeName?: string;
+}
+
+export interface MountainWeatherResult {
+  attribution: string;
+  forecastUntil: string | null;
+  truncated: boolean;
+  tooOld: boolean;
+  current: {
+    temperature: number | null;
+    weatherCode: number;
+    weatherLabel: string;
+    precipitation: number | null;
+    windSpeed: number | null;
+  } | null;
+  days: WeatherDay[];
+}
+
 @Injectable()
 export class MountainsService {
   private readonly logger = new Logger(MountainsService.name);
 
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly kakaoLocalService: KakaoLocalService,
+    private readonly openMeteoService: OpenMeteoService,
+    @InjectModel(MountainCoord.name) private readonly mountainCoordModel: Model<MountainCoordDocument>,
+  ) {}
 
   async search(dto: SearchMountainsDto): Promise<MountainSearchResult> {
     const page = dto.page ?? 1;
@@ -213,6 +250,81 @@ export class MountainsService {
     }
 
     return this.toMountainDetail(matched);
+  }
+
+  async getCoordinates(id: string, dto: GetMountainDetailDto): Promise<MountainCoordResult> {
+    const mountainId = id.trim();
+    const name = dto.name.trim();
+    const region = dto.region.trim();
+
+    const cached = await this.mountainCoordModel.findOne({ externalId: mountainId }).exec();
+    if (cached && cached.name === name && cached.region === region) {
+      return {
+        id: cached.externalId,
+        name: cached.name,
+        region: cached.region,
+        lat: cached.lat,
+        lng: cached.lng,
+        placeName: cached.placeName,
+      };
+    }
+
+    const found = await this.kakaoLocalService.searchMountainCoord(name, region);
+    if (!found) {
+      throw new NotFoundException('산 위치를 찾을 수 없습니다.');
+    }
+
+    const saved = await this.mountainCoordModel.findOneAndUpdate(
+      { externalId: mountainId },
+      {
+        externalId: mountainId,
+        name,
+        region,
+        query: found.query,
+        lat: found.lat,
+        lng: found.lng,
+        placeName: found.placeName,
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true },
+    );
+
+    return {
+      id: mountainId,
+      name,
+      region,
+      lat: saved?.lat ?? found.lat,
+      lng: saved?.lng ?? found.lng,
+      placeName: saved?.placeName ?? found.placeName,
+    };
+  }
+
+  async getWeather(id: string, dto: GetMountainWeatherDto): Promise<MountainWeatherResult> {
+    const coord = await this.getCoordinates(id, dto);
+    const startDate = dto.startDate?.trim();
+    const endDate = dto.endDate?.trim() || startDate;
+    const forecast = await this.openMeteoService.getForecast(coord.lat, coord.lng, pastDaysFromStart(startDate));
+
+    if (!startDate) {
+      return {
+        attribution: forecast.attribution,
+        forecastUntil: forecast.forecastUntil,
+        truncated: false,
+        tooOld: false,
+        current: forecast.current,
+        days: forecast.days.slice(0, OPEN_METEO_DETAIL_DAYS),
+      };
+    }
+
+    const sliced = sliceWeatherDays(forecast.days, startDate, endDate);
+
+    return {
+      attribution: forecast.attribution,
+      forecastUntil: sliced.forecastUntil,
+      truncated: sliced.truncated,
+      tooOld: sliced.tooOld,
+      current: forecast.current,
+      days: sliced.days,
+    };
   }
 
   private async fetchForestApi({

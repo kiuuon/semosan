@@ -51,6 +51,12 @@ export class TripPlace {
   @Prop({ trim: true })
   imageUrl?: string;
 
+  @Prop({ type: Number })
+  lat?: number;
+
+  @Prop({ type: Number })
+  lng?: number;
+
   @Prop({ type: Types.ObjectId, required: true, ref: 'User' })
   createdBy: Types.ObjectId;
 

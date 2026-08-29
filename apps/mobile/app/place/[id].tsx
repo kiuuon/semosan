@@ -128,6 +128,8 @@ export default function PlaceDetailScreen() {
         name: data.name,
         address: data.address,
         imageUrl: data.imageUrl,
+        lat: data.lat,
+        lng: data.lng,
       });
     },
     onSuccess: () => {

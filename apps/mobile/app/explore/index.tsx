@@ -83,6 +83,8 @@ function Explore() {
               value={inputValue}
               onChangeText={handleChangeText}
               autoFocus
+              returnKeyType="search"
+              onSubmitEditing={() => handleNameSearch(inputValue)}
               accessoryRight={
                 submitted ? (
                   <TouchableOpacity onPress={handleClear}>

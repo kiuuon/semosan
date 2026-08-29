@@ -1,4 +1,4 @@
-import { Tabs, useLocalSearchParams } from 'expo-router';
+import { Tabs, router, useLocalSearchParams } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons, Octicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { StyleSheet, View } from 'react-native';
@@ -26,7 +26,15 @@ export default function TripTabsLayout() {
 
   return (
     <View style={styles.root}>
-      <TripHeader title={title} />
+      <TripHeader
+        title={title}
+        onMapPress={() => {
+          if (!id) {
+            return;
+          }
+          router.push({ pathname: '/map/[id]', params: { id } });
+        }}
+      />
       <Tabs
         backBehavior="none"
         tabBar={(props) => <TabBar {...(props as unknown as TabBarProps)} />}

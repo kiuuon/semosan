@@ -100,4 +100,21 @@ describe('Input', () => {
     expect(screen.getByPlaceholderText('비밀번호를 입력하세요').props.secureTextEntry).toBe(false);
     expect(screen.getByLabelText('비밀번호 숨기기')).toBeOnTheScreen();
   });
+
+  it('엔터를 누르면 onSubmitEditing을 호출한다', async () => {
+    const onSubmitEditing = jest.fn();
+    await render(
+      <Input
+        placeholder="산 이름으로 검색"
+        value="북한산"
+        onChangeText={jest.fn()}
+        returnKeyType="search"
+        onSubmitEditing={onSubmitEditing}
+      />,
+    );
+
+    await fireEvent(screen.getByPlaceholderText('산 이름으로 검색'), 'submitEditing');
+
+    expect(onSubmitEditing).toHaveBeenCalledTimes(1);
+  });
 });

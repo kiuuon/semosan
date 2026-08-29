@@ -43,6 +43,8 @@ export type TripPlaceResponse = {
   name: string;
   address?: string;
   imageUrl?: string;
+  lat?: number;
+  lng?: number;
   createdBy: string;
   likedUserIds: string[];
   commentCount: number;
@@ -217,6 +219,8 @@ export class TripsService implements OnModuleInit {
     const name = dto.name.trim();
     const address = dto.address?.trim() || undefined;
     const imageUrl = dto.imageUrl?.trim() || undefined;
+    const lat = Number.isFinite(dto.lat) ? dto.lat : undefined;
+    const lng = Number.isFinite(dto.lng) ? dto.lng : undefined;
 
     const activeExisting = await this.tripPlaceModel
       .findOne({ tripId: trip._id, externalId, status: TRIP_PLACE_STATUS.ACTIVE })
@@ -233,6 +237,8 @@ export class TripsService implements OnModuleInit {
         name,
         address,
         imageUrl,
+        lat,
+        lng,
         createdBy: new Types.ObjectId(userId),
         likedUserIds: [],
         comments: [],
@@ -659,6 +665,8 @@ export class TripsService implements OnModuleInit {
       name: place.name,
       address: place.address,
       imageUrl: place.imageUrl,
+      lat: place.lat,
+      lng: place.lng,
       createdBy: place.createdBy.toString(),
       likedUserIds: place.likedUserIds.map((id) => id.toString()),
       commentCount: place.comments.filter((comment) => comment.status === PLACE_COMMENT_STATUS.ACTIVE).length,

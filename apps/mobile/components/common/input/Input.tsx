@@ -1,5 +1,5 @@
 import { type ReactNode, useState } from 'react';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, TextInput, type TextInputProps, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import colors from '../../../lib/constants/colors';
 import Typography from '../typography/Typography';
@@ -16,6 +16,8 @@ interface InputProps {
   caption?: string;
   secureTextEntry?: boolean;
   autoFocus?: boolean;
+  returnKeyType?: TextInputProps['returnKeyType'];
+  onSubmitEditing?: TextInputProps['onSubmitEditing'];
 }
 
 const borderColorByStatus = {
@@ -36,6 +38,8 @@ const Input = ({
   caption,
   secureTextEntry = false,
   autoFocus = false,
+  returnKeyType,
+  onSubmitEditing,
 }: InputProps) => {
   const [isSecureTextVisible, setIsSecureTextVisible] = useState(false);
 
@@ -54,6 +58,8 @@ const Input = ({
           secureTextEntry={secureTextEntry && !isSecureTextVisible}
           onChangeText={onChangeText}
           value={value}
+          returnKeyType={returnKeyType}
+          onSubmitEditing={onSubmitEditing}
         />
         {secureTextEntry ? (
           <Pressable

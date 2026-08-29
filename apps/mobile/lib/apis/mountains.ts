@@ -70,3 +70,70 @@ export async function getMountainDetail(params: { id: string; name: string; regi
   });
   return data;
 }
+
+export interface MountainCoord {
+  id: string;
+  name: string;
+  region: string;
+  lat: number;
+  lng: number;
+  placeName?: string;
+}
+
+export async function getMountainCoordinates(params: {
+  id: string;
+  name: string;
+  region: string;
+}): Promise<MountainCoord> {
+  const instance = await getInstance();
+  const { data } = await instance.get<MountainCoord>(`/mountains/${params.id}/coordinates`, {
+    params: {
+      name: params.name.trim(),
+      region: params.region.trim(),
+    },
+  });
+  return data;
+}
+
+export interface MountainWeatherDay {
+  date: string;
+  weatherCode: number;
+  weatherLabel: string;
+  tMax: number | null;
+  tMin: number | null;
+  precipProb: number | null;
+}
+
+export interface MountainWeather {
+  attribution: string;
+  forecastUntil: string | null;
+  truncated: boolean;
+  tooOld: boolean;
+  current: {
+    temperature: number | null;
+    weatherCode: number;
+    weatherLabel: string;
+    precipitation: number | null;
+    windSpeed: number | null;
+  } | null;
+  days: MountainWeatherDay[];
+}
+
+export async function getMountainWeather(params: {
+  id: string;
+  name: string;
+  region: string;
+  startDate?: string;
+  endDate?: string;
+}): Promise<MountainWeather> {
+  const instance = await getInstance();
+  const { data } = await instance.get<MountainWeather>(`/mountains/${params.id}/weather`, {
+    params: {
+      name: params.name.trim(),
+      region: params.region.trim(),
+      ...(params.startDate ? { startDate: params.startDate } : {}),
+      ...(params.endDate ? { endDate: params.endDate } : {}),
+    },
+  });
+  return data;
+}

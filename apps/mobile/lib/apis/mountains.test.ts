@@ -1,5 +1,5 @@
 import getInstance from './instance';
-import { getMountainDetail, searchMountains } from './mountains';
+import { getMountainCoordinates, getMountainDetail, getMountainWeather, searchMountains } from './mountains';
 
 jest.mock('./instance');
 
@@ -125,6 +125,74 @@ describe('mountains', () => {
         params: {
           name: '관악산',
           region: '서울특별시 관악구',
+        },
+      });
+    });
+  });
+
+  describe('getMountainCoordinates', () => {
+    it('산 좌표 API를 호출하고 결과를 반환한다', async () => {
+      const result = {
+        id: '20000059',
+        name: '관악산',
+        region: '서울특별시 관악구',
+        lat: 37.4419,
+        lng: 126.9638,
+        placeName: '관악산',
+      };
+      mockGet.mockResolvedValue({ data: result });
+
+      await expect(
+        getMountainCoordinates({
+          id: '20000059',
+          name: '  관악산  ',
+          region: '  서울특별시 관악구  ',
+        }),
+      ).resolves.toEqual(result);
+
+      expect(mockGet).toHaveBeenCalledWith('/mountains/20000059/coordinates', {
+        params: {
+          name: '관악산',
+          region: '서울특별시 관악구',
+        },
+      });
+    });
+  });
+
+  describe('getMountainWeather', () => {
+    it('산 날씨 API를 호출하고 결과를 반환한다', async () => {
+      const result = {
+        attribution: 'Weather data by Open-Meteo.com',
+        forecastUntil: '2026-09-13',
+        truncated: true,
+        tooOld: false,
+        current: {
+          temperature: 24,
+          weatherCode: 2,
+          weatherLabel: '구름 조금',
+          precipitation: 0,
+          windSpeed: 3,
+        },
+        days: [],
+      };
+      mockGet.mockResolvedValue({ data: result });
+
+      await expect(
+        getMountainWeather({
+          id: '20000059',
+          name: '  관악산  ',
+          region: '  서울특별시 관악구  ',
+          startDate: '2026-08-29',
+          endDate: '2026-09-20',
+        }),
+      ).resolves.toEqual(result);
+
+      expect(mockGet).toHaveBeenCalledWith('/mountains/20000059/weather', {
+        params: {
+          name: '관악산',
+          region: '서울특별시 관악구',
+          startDate: '2026-08-29',
+          endDate: '2026-09-20',
         },
       });
     });

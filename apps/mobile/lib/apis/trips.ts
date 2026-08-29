@@ -53,6 +53,8 @@ export interface TripPlace {
   name: string;
   address?: string;
   imageUrl?: string;
+  lat?: number | null;
+  lng?: number | null;
   createdBy: string;
   likedUserIds: string[];
   commentCount: number;
@@ -66,6 +68,8 @@ export interface AddTripPlacePayload {
   name: string;
   address?: string;
   imageUrl?: string;
+  lat?: number | null;
+  lng?: number | null;
 }
 
 export async function createTrip(payload: CreateTripPayload): Promise<Trip> {
@@ -119,6 +123,8 @@ export async function addTripPlace(tripId: string, payload: AddTripPlacePayload)
     name: payload.name.trim(),
     ...(payload.address?.trim() ? { address: payload.address.trim() } : {}),
     ...(payload.imageUrl?.trim() ? { imageUrl: payload.imageUrl.trim() } : {}),
+    ...(Number.isFinite(payload.lat) ? { lat: payload.lat } : {}),
+    ...(Number.isFinite(payload.lng) ? { lng: payload.lng } : {}),
   });
   return response.data;
 }
