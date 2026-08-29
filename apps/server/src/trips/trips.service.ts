@@ -11,13 +11,16 @@ import { InjectModel } from '@nestjs/mongoose';
 import { randomBytes } from 'crypto';
 import { Model, Types } from 'mongoose';
 
+import { FEED_POST_STATUS } from '../common/constants/feed';
 import { PLACE_COMMENT_STATUS, TRIP_PLACE_STATUS } from '../common/constants/place';
 import { TRIP_MEMBER_ROLE, TRIP_STATUS } from '../common/constants/trip';
+import { FeedPost, FeedPostDocument } from '../schemas/feed-post.schema';
 import { TripPlace, TripPlaceDocument } from '../schemas/trip-place.schema';
 import { Trip, TripDocument } from '../schemas/trip.schema';
 import { User, UserDocument } from '../schemas/user.schema';
 import { AddTripPlaceCommentDto } from './dto/add-trip-place-comment.dto';
 import { AddTripPlaceDto } from './dto/add-trip-place.dto';
+import { CreateFeedPostDto } from './dto/create-feed-post.dto';
 import { CreateTripDto } from './dto/create-trip.dto';
 import { UpdateTripDto } from './dto/update-trip.dto';
 
@@ -55,6 +58,21 @@ export type TripPlaceCommentResponse = {
   createdAt: Date;
 };
 
+export type FeedPostResponse = {
+  _id: string;
+  tripId: string;
+  authorId: string;
+  authorNickname: string;
+  content: string;
+  imageUrls: string[];
+  likedUserIds: string[];
+  commentCount: number;
+  createdAt?: Date;
+  updatedAt?: Date;
+};
+
+export type FeedPostCommentResponse = TripPlaceCommentResponse;
+
 export type TripDetailResponse = {
   _id: string;
   ownerId: string;
@@ -76,14 +94,15 @@ export class TripsService implements OnModuleInit {
   constructor(
     @InjectModel(Trip.name) private readonly tripModel: Model<TripDocument>,
     @InjectModel(TripPlace.name) private readonly tripPlaceModel: Model<TripPlaceDocument>,
+    @InjectModel(FeedPost.name) private readonly feedPostModel: Model<FeedPostDocument>,
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
   ) {}
 
   async onModuleInit() {
     try {
-      await this.tripPlaceModel.syncIndexes();
+      await Promise.all([this.tripPlaceModel.syncIndexes(), this.feedPostModel.syncIndexes()]);
     } catch (error) {
-      this.logger.warn('Failed to sync TripPlace indexes', error);
+      this.logger.warn('Failed to sync TripPlace/FeedPost indexes', error);
     }
   }
 
@@ -261,24 +280,7 @@ export class TripsService implements OnModuleInit {
     this.assertMember(trip, userId);
 
     const place = await this.getActivePlaceOrThrow(tripId, placeId);
-    const activeComments = place.comments.filter((comment) => comment.status === PLACE_COMMENT_STATUS.ACTIVE);
-    const commentUserIds = activeComments.map((comment) => comment.userId);
-    const users = await this.userModel
-      .find({ _id: { $in: commentUserIds } })
-      .select('_id nickname')
-      .exec();
-    const nicknameById = new Map(users.map((user) => [user._id.toString(), user.nickname]));
-
-    return activeComments
-      .slice()
-      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
-      .map((comment) => ({
-        _id: this.getEmbeddedCommentId(comment),
-        userId: comment.userId.toString(),
-        nickname: nicknameById.get(comment.userId.toString()) ?? '알 수 없음',
-        content: comment.content,
-        createdAt: comment.createdAt,
-      }));
+    return await this.toCommentResponses(place.comments);
   }
 
   async addPlaceComment(
@@ -314,6 +316,153 @@ export class TripsService implements OnModuleInit {
       content: created.content,
       createdAt: created.createdAt,
     };
+  }
+
+  async findFeedPosts(tripId: string, userId: string): Promise<FeedPostResponse[]> {
+    const trip = await this.getActiveTripOrThrow(tripId);
+    this.assertMember(trip, userId);
+
+    const posts = await this.feedPostModel
+      .find({ tripId: trip._id, status: FEED_POST_STATUS.ACTIVE })
+      .sort({ createdAt: -1 })
+      .exec();
+
+    const authorIds = [...new Set(posts.map((post) => post.authorId.toString()))];
+    const users = await this.userModel
+      .find({ _id: { $in: authorIds.map((id) => new Types.ObjectId(id)) } })
+      .select('_id nickname')
+      .exec();
+    const nicknameById = new Map(users.map((user) => [user._id.toString(), user.nickname]));
+
+    return posts.map((post) => this.toFeedPostResponse(post, nicknameById));
+  }
+
+  async createFeedPost(tripId: string, userId: string, dto: CreateFeedPostDto): Promise<FeedPostResponse> {
+    const trip = await this.getActiveTripOrThrow(tripId);
+    this.assertMember(trip, userId);
+
+    const content = dto.content.trim();
+    if (!content) {
+      throw new BadRequestException('내용을 입력해 주세요.');
+    }
+
+    const post = await this.feedPostModel.create({
+      tripId: trip._id,
+      authorId: new Types.ObjectId(userId),
+      content,
+      imageUrls: [],
+      likedUserIds: [],
+      comments: [],
+      status: FEED_POST_STATUS.ACTIVE,
+    });
+
+    const author = await this.userModel.findById(userId).select('nickname').exec();
+    const nicknameById = new Map([[userId, author?.nickname ?? '알 수 없음']]);
+
+    return this.toFeedPostResponse(post, nicknameById);
+  }
+
+  async removeFeedPost(tripId: string, postId: string, userId: string): Promise<void> {
+    const trip = await this.getActiveTripOrThrow(tripId);
+    this.assertMember(trip, userId);
+
+    const post = await this.getActiveFeedPostOrThrow(tripId, postId);
+    if (post.authorId.toString() !== userId) {
+      throw new ForbiddenException('본인 글만 삭제할 수 있습니다.');
+    }
+
+    post.status = FEED_POST_STATUS.DELETED;
+    await post.save();
+  }
+
+  async toggleFeedPostLike(tripId: string, postId: string, userId: string): Promise<FeedPostResponse> {
+    const trip = await this.getActiveTripOrThrow(tripId);
+    this.assertMember(trip, userId);
+
+    const post = await this.getActiveFeedPostOrThrow(tripId, postId);
+    const userObjectId = new Types.ObjectId(userId);
+    const likedIndex = post.likedUserIds.findIndex((id) => id.toString() === userId);
+
+    if (likedIndex >= 0) {
+      post.likedUserIds.splice(likedIndex, 1);
+    } else {
+      post.likedUserIds.push(userObjectId);
+    }
+
+    await post.save();
+
+    const author = await this.userModel.findById(post.authorId).select('nickname').exec();
+    const nicknameById = new Map([[post.authorId.toString(), author?.nickname ?? '알 수 없음']]);
+
+    return this.toFeedPostResponse(post, nicknameById);
+  }
+
+  async findFeedPostComments(tripId: string, postId: string, userId: string): Promise<FeedPostCommentResponse[]> {
+    const trip = await this.getActiveTripOrThrow(tripId);
+    this.assertMember(trip, userId);
+
+    const post = await this.getActiveFeedPostOrThrow(tripId, postId);
+    return await this.toCommentResponses(post.comments);
+  }
+
+  async addFeedPostComment(
+    tripId: string,
+    postId: string,
+    userId: string,
+    dto: AddTripPlaceCommentDto,
+  ): Promise<FeedPostCommentResponse> {
+    const trip = await this.getActiveTripOrThrow(tripId);
+    this.assertMember(trip, userId);
+
+    const post = await this.getActiveFeedPostOrThrow(tripId, postId);
+    const content = dto.content.trim();
+    if (!content) {
+      throw new BadRequestException('댓글 내용을 입력해 주세요.');
+    }
+
+    post.comments.push({
+      userId: new Types.ObjectId(userId),
+      content,
+      status: PLACE_COMMENT_STATUS.ACTIVE,
+      createdAt: new Date(),
+    });
+    await post.save();
+
+    const created = post.comments[post.comments.length - 1];
+    const user = await this.userModel.findById(userId).select('nickname').exec();
+
+    return {
+      _id: this.getEmbeddedCommentId(created),
+      userId,
+      nickname: user?.nickname ?? '알 수 없음',
+      content: created.content,
+      createdAt: created.createdAt,
+    };
+  }
+
+  async removeFeedPostComment(tripId: string, postId: string, commentId: string, userId: string): Promise<void> {
+    const trip = await this.getActiveTripOrThrow(tripId);
+    this.assertMember(trip, userId);
+
+    if (!Types.ObjectId.isValid(commentId)) {
+      throw new NotFoundException('댓글을 찾을 수 없습니다.');
+    }
+
+    const post = await this.getActiveFeedPostOrThrow(tripId, postId);
+    const comment = post.comments.find(
+      (item) => this.getEmbeddedCommentId(item) === commentId && item.status === PLACE_COMMENT_STATUS.ACTIVE,
+    );
+
+    if (!comment) {
+      throw new NotFoundException('댓글을 찾을 수 없습니다.');
+    }
+
+    if (comment.userId.toString() !== userId) {
+      throw new ForbiddenException('본인 댓글만 삭제할 수 있습니다.');
+    }
+
+    comment.status = PLACE_COMMENT_STATUS.DELETED;
+    await post.save();
   }
 
   async removePlaceComment(tripId: string, placeId: string, commentId: string, userId: string): Promise<void> {
@@ -382,6 +531,21 @@ export class TripsService implements OnModuleInit {
     return trip;
   }
 
+  private async getActiveFeedPostOrThrow(tripId: string, postId: string): Promise<FeedPostDocument> {
+    if (!Types.ObjectId.isValid(tripId) || !Types.ObjectId.isValid(postId)) {
+      throw new NotFoundException('글을 찾을 수 없습니다.');
+    }
+
+    const post = await this.feedPostModel
+      .findOne({ _id: postId, tripId: new Types.ObjectId(tripId), status: FEED_POST_STATUS.ACTIVE })
+      .exec();
+    if (!post) {
+      throw new NotFoundException('글을 찾을 수 없습니다.');
+    }
+
+    return post;
+  }
+
   private async getActivePlaceOrThrow(tripId: string, placeId: string): Promise<TripPlaceDocument> {
     if (!Types.ObjectId.isValid(tripId) || !Types.ObjectId.isValid(placeId)) {
       throw new NotFoundException('추가된 장소를 찾을 수 없습니다.');
@@ -446,6 +610,44 @@ export class TripsService implements OnModuleInit {
       createdAt: trip.get('createdAt'),
       updatedAt: trip.get('updatedAt'),
     };
+  }
+
+  private toFeedPostResponse(post: FeedPostDocument, nicknameById: Map<string, string>): FeedPostResponse {
+    return {
+      _id: post._id.toString(),
+      tripId: post.tripId.toString(),
+      authorId: post.authorId.toString(),
+      authorNickname: nicknameById.get(post.authorId.toString()) ?? '알 수 없음',
+      content: post.content,
+      imageUrls: post.imageUrls ?? [],
+      likedUserIds: post.likedUserIds.map((id) => id.toString()),
+      commentCount: post.comments.filter((comment) => comment.status === PLACE_COMMENT_STATUS.ACTIVE).length,
+      createdAt: post.get('createdAt'),
+      updatedAt: post.get('updatedAt'),
+    };
+  }
+
+  private async toCommentResponses(
+    comments: Array<{ userId: Types.ObjectId; content: string; status: string; createdAt: Date; _id?: Types.ObjectId }>,
+  ): Promise<TripPlaceCommentResponse[]> {
+    const activeComments = comments.filter((comment) => comment.status === PLACE_COMMENT_STATUS.ACTIVE);
+    const commentUserIds = activeComments.map((comment) => comment.userId);
+    const users = await this.userModel
+      .find({ _id: { $in: commentUserIds } })
+      .select('_id nickname')
+      .exec();
+    const nicknameById = new Map(users.map((user) => [user._id.toString(), user.nickname]));
+
+    return activeComments
+      .slice()
+      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+      .map((comment) => ({
+        _id: this.getEmbeddedCommentId(comment),
+        userId: comment.userId.toString(),
+        nickname: nicknameById.get(comment.userId.toString()) ?? '알 수 없음',
+        content: comment.content,
+        createdAt: comment.createdAt,
+      }));
   }
 
   private toPlaceResponse(place: TripPlaceDocument): TripPlaceResponse {

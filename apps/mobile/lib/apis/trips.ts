@@ -160,3 +160,72 @@ export async function removeTripPlaceComment(tripId: string, placeId: string, co
   const instance = await getInstance();
   await instance.delete(`/trips/${tripId}/places/${placeId}/comments/${commentId}`);
 }
+
+export interface TripFeedPost {
+  _id: string;
+  tripId: string;
+  authorId: string;
+  authorNickname: string;
+  content: string;
+  imageUrls: string[];
+  likedUserIds: string[];
+  commentCount: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface TripFeedPostComment {
+  _id: string;
+  userId: string;
+  nickname: string;
+  content: string;
+  createdAt: string;
+}
+
+export async function getTripFeedPosts(tripId: string): Promise<TripFeedPost[]> {
+  const instance = await getInstance();
+  const response = await instance.get<TripFeedPost[]>(`/trips/${tripId}/posts`);
+  return response.data;
+}
+
+export async function createTripFeedPost(tripId: string, content: string): Promise<TripFeedPost> {
+  const instance = await getInstance();
+  const response = await instance.post<TripFeedPost>(`/trips/${tripId}/posts`, {
+    content: content.trim(),
+  });
+  return response.data;
+}
+
+export async function removeTripFeedPost(tripId: string, postId: string): Promise<void> {
+  const instance = await getInstance();
+  await instance.delete(`/trips/${tripId}/posts/${postId}`);
+}
+
+export async function toggleTripFeedPostLike(tripId: string, postId: string): Promise<TripFeedPost> {
+  const instance = await getInstance();
+  const response = await instance.post<TripFeedPost>(`/trips/${tripId}/posts/${postId}/like`);
+  return response.data;
+}
+
+export async function getTripFeedPostComments(tripId: string, postId: string): Promise<TripFeedPostComment[]> {
+  const instance = await getInstance();
+  const response = await instance.get<TripFeedPostComment[]>(`/trips/${tripId}/posts/${postId}/comments`);
+  return response.data;
+}
+
+export async function addTripFeedPostComment(
+  tripId: string,
+  postId: string,
+  content: string,
+): Promise<TripFeedPostComment> {
+  const instance = await getInstance();
+  const response = await instance.post<TripFeedPostComment>(`/trips/${tripId}/posts/${postId}/comments`, {
+    content: content.trim(),
+  });
+  return response.data;
+}
+
+export async function removeTripFeedPostComment(tripId: string, postId: string, commentId: string): Promise<void> {
+  const instance = await getInstance();
+  await instance.delete(`/trips/${tripId}/posts/${postId}/comments/${commentId}`);
+}

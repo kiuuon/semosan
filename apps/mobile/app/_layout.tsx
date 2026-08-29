@@ -4,6 +4,8 @@ import { useFonts } from 'expo-font';
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Toast from 'react-native-toast-message';
+
+import { AppToast } from '../components/common/toast/toastConfig';
 import {
   NotoSansKR_400Regular,
   NotoSansKR_500Medium,
@@ -77,7 +79,7 @@ export default function RootLayout() {
           <RootStack />
         </SafeAreaView>
       </SafeAreaProvider>
-      <Toast position="top" topOffset={75} />
+      <AppToast />
     </QueryClientProvider>
   );
 }
