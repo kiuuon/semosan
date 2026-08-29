@@ -70,3 +70,27 @@ export async function getMountainDetail(params: { id: string; name: string; regi
   });
   return data;
 }
+
+export interface MountainCoord {
+  id: string;
+  name: string;
+  region: string;
+  lat: number;
+  lng: number;
+  placeName?: string;
+}
+
+export async function getMountainCoordinates(params: {
+  id: string;
+  name: string;
+  region: string;
+}): Promise<MountainCoord> {
+  const instance = await getInstance();
+  const { data } = await instance.get<MountainCoord>(`/mountains/${params.id}/coordinates`, {
+    params: {
+      name: params.name.trim(),
+      region: params.region.trim(),
+    },
+  });
+  return data;
+}

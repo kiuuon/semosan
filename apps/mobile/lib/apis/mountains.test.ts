@@ -1,5 +1,5 @@
 import getInstance from './instance';
-import { getMountainDetail, searchMountains } from './mountains';
+import { getMountainCoordinates, getMountainDetail, searchMountains } from './mountains';
 
 jest.mock('./instance');
 
@@ -122,6 +122,35 @@ describe('mountains', () => {
       ).resolves.toEqual(result);
 
       expect(mockGet).toHaveBeenCalledWith('/mountains/20000059', {
+        params: {
+          name: '관악산',
+          region: '서울특별시 관악구',
+        },
+      });
+    });
+  });
+
+  describe('getMountainCoordinates', () => {
+    it('산 좌표 API를 호출하고 결과를 반환한다', async () => {
+      const result = {
+        id: '20000059',
+        name: '관악산',
+        region: '서울특별시 관악구',
+        lat: 37.4419,
+        lng: 126.9638,
+        placeName: '관악산',
+      };
+      mockGet.mockResolvedValue({ data: result });
+
+      await expect(
+        getMountainCoordinates({
+          id: '20000059',
+          name: '  관악산  ',
+          region: '  서울특별시 관악구  ',
+        }),
+      ).resolves.toEqual(result);
+
+      expect(mockGet).toHaveBeenCalledWith('/mountains/20000059/coordinates', {
         params: {
           name: '관악산',
           region: '서울특별시 관악구',

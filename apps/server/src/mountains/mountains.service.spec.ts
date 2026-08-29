@@ -1,18 +1,33 @@
 import { InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { getModelToken } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
 
+import { MountainCoord } from '../schemas/mountain-coord.schema';
+import { KakaoLocalService } from './kakao-local.service';
 import { MountainsService } from './mountains.service';
 import { MountainSearchType } from './types/mountain-search-type';
 
 describe('MountainsService', () => {
   let service: MountainsService;
   let configService: jest.Mocked<ConfigService>;
+  let kakaoLocalService: jest.Mocked<Pick<KakaoLocalService, 'searchMountainCoord'>>;
+  let mountainCoordModel: {
+    findOne: jest.Mock;
+    findOneAndUpdate: jest.Mock;
+  };
   let fetchMock: jest.Mock;
 
   beforeEach(async () => {
     fetchMock = jest.fn();
     global.fetch = fetchMock as unknown as typeof fetch;
+    kakaoLocalService = {
+      searchMountainCoord: jest.fn(),
+    };
+    mountainCoordModel = {
+      findOne: jest.fn(),
+      findOneAndUpdate: jest.fn(),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -22,6 +37,14 @@ describe('MountainsService', () => {
           useValue: {
             get: jest.fn(),
           },
+        },
+        {
+          provide: KakaoLocalService,
+          useValue: kakaoLocalService,
+        },
+        {
+          provide: getModelToken(MountainCoord.name),
+          useValue: mountainCoordModel,
         },
       ],
     }).compile();
@@ -333,6 +356,119 @@ describe('MountainsService', () => {
           region: '서울',
         }),
       ).rejects.toThrow(new NotFoundException('산 정보를 찾을 수 없습니다.'));
+    });
+  });
+
+  describe('getCoordinates', () => {
+    const dto = {
+      name: '관악산',
+      region: '서울특별시 관악구ㆍ금천구, 경기도 안양시ㆍ과천시',
+    };
+
+    it('캐시가 이름·소재지와 같으면 카카오를 호출하지 않는다', async () => {
+      mountainCoordModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue({
+          externalId: '20000059',
+          name: '관악산',
+          region: dto.region,
+          lat: 37.4419,
+          lng: 126.9638,
+          placeName: '관악산',
+        }),
+      });
+
+      await expect(service.getCoordinates('20000059', dto)).resolves.toEqual({
+        id: '20000059',
+        name: '관악산',
+        region: dto.region,
+        lat: 37.4419,
+        lng: 126.9638,
+        placeName: '관악산',
+      });
+
+      expect(kakaoLocalService.searchMountainCoord).not.toHaveBeenCalled();
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it('캐시가 없으면 카카오 결과를 저장하고 반환한다', async () => {
+      mountainCoordModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(null),
+      });
+      kakaoLocalService.searchMountainCoord.mockResolvedValue({
+        lat: 37.4419,
+        lng: 126.9638,
+        placeName: '관악산',
+        query: '관악산 서울특별시 관악구',
+      });
+      mountainCoordModel.findOneAndUpdate.mockResolvedValue({
+        lat: 37.4419,
+        lng: 126.9638,
+        placeName: '관악산',
+      });
+
+      await expect(
+        service.getCoordinates(' 20000059 ', { name: ' 관악산 ', region: ` ${dto.region} ` }),
+      ).resolves.toEqual({
+        id: '20000059',
+        name: '관악산',
+        region: dto.region,
+        lat: 37.4419,
+        lng: 126.9638,
+        placeName: '관악산',
+      });
+
+      expect(kakaoLocalService.searchMountainCoord).toHaveBeenCalledWith('관악산', dto.region);
+      expect(mountainCoordModel.findOneAndUpdate).toHaveBeenCalledWith(
+        { externalId: '20000059' },
+        {
+          externalId: '20000059',
+          name: '관악산',
+          region: dto.region,
+          query: '관악산 서울특별시 관악구',
+          lat: 37.4419,
+          lng: 126.9638,
+          placeName: '관악산',
+        },
+        { upsert: true, new: true, setDefaultsOnInsert: true },
+      );
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it('이름이나 소재지가 바뀌면 카카오를 다시 조회한다', async () => {
+      mountainCoordModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue({
+          externalId: '20000059',
+          name: '관악산',
+          region: '이전 소재지',
+          lat: 1,
+          lng: 1,
+        }),
+      });
+      kakaoLocalService.searchMountainCoord.mockResolvedValue({
+        lat: 37.4419,
+        lng: 126.9638,
+        query: '관악산 서울특별시 관악구',
+      });
+      mountainCoordModel.findOneAndUpdate.mockResolvedValue({
+        lat: 37.4419,
+        lng: 126.9638,
+      });
+
+      await service.getCoordinates('20000059', dto);
+
+      expect(kakaoLocalService.searchMountainCoord).toHaveBeenCalledWith('관악산', dto.region);
+    });
+
+    it('카카오에서 위치를 못 찾으면 NotFoundException을 던진다', async () => {
+      mountainCoordModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(null),
+      });
+      kakaoLocalService.searchMountainCoord.mockResolvedValue(null);
+
+      await expect(service.getCoordinates('20000059', dto)).rejects.toThrow(
+        new NotFoundException('산 위치를 찾을 수 없습니다.'),
+      );
+      expect(mountainCoordModel.findOneAndUpdate).not.toHaveBeenCalled();
     });
   });
 });

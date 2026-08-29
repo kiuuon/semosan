@@ -18,6 +18,7 @@ describe('MountainsController', () => {
             search: jest.fn(),
             recommend: jest.fn(),
             getDetail: jest.fn(),
+            getCoordinates: jest.fn(),
           },
         },
       ],
@@ -93,5 +94,24 @@ describe('MountainsController', () => {
 
     await expect(controller.getDetail('20000059', dto)).resolves.toEqual(result);
     expect(mountainsService.getDetail).toHaveBeenCalledWith('20000059', dto);
+  });
+
+  it('getCoordinates는 MountainsService에 위임한다', async () => {
+    const dto = {
+      name: '관악산',
+      region: '서울특별시 관악구',
+    };
+    const result = {
+      id: '20000059',
+      name: '관악산',
+      region: '서울특별시 관악구',
+      lat: 37.4419,
+      lng: 126.9638,
+      placeName: '관악산',
+    };
+    mountainsService.getCoordinates.mockResolvedValue(result);
+
+    await expect(controller.getCoordinates('20000059', dto)).resolves.toEqual(result);
+    expect(mountainsService.getCoordinates).toHaveBeenCalledWith('20000059', dto);
   });
 });

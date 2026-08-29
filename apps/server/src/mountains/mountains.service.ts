@@ -1,5 +1,10 @@
 import { Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+
+import { MountainCoord, type MountainCoordDocument } from '../schemas/mountain-coord.schema';
+import { KakaoLocalService } from './kakao-local.service';
 
 import {
   getCurrentSeasonCode,
@@ -88,11 +93,24 @@ export interface MountainRecommendResult {
   subline: string;
 }
 
+export interface MountainCoordResult {
+  id: string;
+  name: string;
+  region: string;
+  lat: number;
+  lng: number;
+  placeName?: string;
+}
+
 @Injectable()
 export class MountainsService {
   private readonly logger = new Logger(MountainsService.name);
 
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly kakaoLocalService: KakaoLocalService,
+    @InjectModel(MountainCoord.name) private readonly mountainCoordModel: Model<MountainCoordDocument>,
+  ) {}
 
   async search(dto: SearchMountainsDto): Promise<MountainSearchResult> {
     const page = dto.page ?? 1;
@@ -213,6 +231,52 @@ export class MountainsService {
     }
 
     return this.toMountainDetail(matched);
+  }
+
+  async getCoordinates(id: string, dto: GetMountainDetailDto): Promise<MountainCoordResult> {
+    const mountainId = id.trim();
+    const name = dto.name.trim();
+    const region = dto.region.trim();
+
+    const cached = await this.mountainCoordModel.findOne({ externalId: mountainId }).exec();
+    if (cached && cached.name === name && cached.region === region) {
+      return {
+        id: cached.externalId,
+        name: cached.name,
+        region: cached.region,
+        lat: cached.lat,
+        lng: cached.lng,
+        placeName: cached.placeName,
+      };
+    }
+
+    const found = await this.kakaoLocalService.searchMountainCoord(name, region);
+    if (!found) {
+      throw new NotFoundException('산 위치를 찾을 수 없습니다.');
+    }
+
+    const saved = await this.mountainCoordModel.findOneAndUpdate(
+      { externalId: mountainId },
+      {
+        externalId: mountainId,
+        name,
+        region,
+        query: found.query,
+        lat: found.lat,
+        lng: found.lng,
+        placeName: found.placeName,
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true },
+    );
+
+    return {
+      id: mountainId,
+      name,
+      region,
+      lat: saved?.lat ?? found.lat,
+      lng: saved?.lng ?? found.lng,
+      placeName: saved?.placeName ?? found.placeName,
+    };
   }
 
   private async fetchForestApi({

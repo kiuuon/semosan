@@ -100,6 +100,8 @@ export default function TripNearbyScreen() {
         name: item.name,
         address: item.address,
         imageUrl: item.imageUrl,
+        lat: item.lat,
+        lng: item.lng,
       }),
     onMutate: (item) => {
       setPendingExternalId(item.id);
