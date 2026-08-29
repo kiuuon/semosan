@@ -3,6 +3,7 @@ import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 import { GetMountainDetailDto } from './dto/get-mountain-detail.dto';
+import { GetMountainWeatherDto } from './dto/get-mountain-weather.dto';
 import { RecommendMountainsDto } from './dto/recommend-mountains.dto';
 import { SearchMountainsDto } from './dto/search-mountains.dto';
 import { MountainsService } from './mountains.service';
@@ -25,6 +26,11 @@ export class MountainsController {
   @UseGuards(JwtAuthGuard)
   getCoordinates(@Param('id') id: string, @Query() dto: GetMountainDetailDto) {
     return this.mountainsService.getCoordinates(id, dto);
+  }
+
+  @Get(':id/weather')
+  getWeather(@Param('id') id: string, @Query() dto: GetMountainWeatherDto) {
+    return this.mountainsService.getWeather(id, dto);
   }
 
   @Get(':id')

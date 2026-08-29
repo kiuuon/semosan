@@ -5,11 +5,12 @@ import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
-import { getMountainDetail } from '../../lib/apis/mountains';
+import { getMountainDetail, getMountainWeather } from '../../lib/apis/mountains';
 import colors from '../../lib/constants/colors';
 import useRequireAuth from '../../lib/hooks/useRequireAuth';
 import Button from '../../components/common/button/Button';
 import Typography from '../../components/common/typography/Typography';
+import { TodayWeatherCard } from '../../components/weather/WeatherCards';
 
 const IMAGE_HEIGHT = Dimensions.get('window').width * 0.85;
 const COLLAPSED_LINES = 3;
@@ -60,6 +61,16 @@ function MountainDetail() {
   const { data, isPending, isError } = useQuery({
     queryKey: ['mountains', 'detail', id, name, region],
     queryFn: () => getMountainDetail({ id, name, region }),
+    enabled: id.length > 0 && name.length > 0 && region.length > 0,
+  });
+
+  const {
+    data: weather,
+    isPending: isWeatherPending,
+    isError: isWeatherError,
+  } = useQuery({
+    queryKey: ['mountains', 'weather', id, name, region],
+    queryFn: () => getMountainWeather({ id, name, region }),
     enabled: id.length > 0 && name.length > 0 && region.length > 0,
   });
 
@@ -128,6 +139,8 @@ function MountainDetail() {
                       {data.height != null ? `${data.height}m` : '-'} · {data.region || '지역 정보 없음'}
                     </Typography.Caption>
                   </View>
+
+                  <TodayWeatherCard weather={weather} isPending={isWeatherPending} isError={isWeatherError} />
 
                   {data.description ? (
                     <View style={styles.section}>

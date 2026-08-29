@@ -6,10 +6,11 @@ import { MountainCoord, MountainCoordSchema } from '../schemas/mountain-coord.sc
 import { KakaoLocalService } from './kakao-local.service';
 import { MountainsController } from './mountains.controller';
 import { MountainsService } from './mountains.service';
+import { OpenMeteoService } from './open-meteo.service';
 
 @Module({
   imports: [AuthModule, MongooseModule.forFeature([{ name: MountainCoord.name, schema: MountainCoordSchema }])],
   controllers: [MountainsController],
-  providers: [MountainsService, KakaoLocalService],
+  providers: [MountainsService, KakaoLocalService, OpenMeteoService],
 })
 export class MountainsModule {}

@@ -6,12 +6,15 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { MountainCoord } from '../schemas/mountain-coord.schema';
 import { KakaoLocalService } from './kakao-local.service';
 import { MountainsService } from './mountains.service';
+import { OpenMeteoService } from './open-meteo.service';
+import { pastDaysFromStart } from './open-meteo.util';
 import { MountainSearchType } from './types/mountain-search-type';
 
 describe('MountainsService', () => {
   let service: MountainsService;
   let configService: jest.Mocked<ConfigService>;
   let kakaoLocalService: jest.Mocked<Pick<KakaoLocalService, 'searchMountainCoord'>>;
+  let openMeteoService: jest.Mocked<Pick<OpenMeteoService, 'getForecast'>>;
   let mountainCoordModel: {
     findOne: jest.Mock;
     findOneAndUpdate: jest.Mock;
@@ -23,6 +26,9 @@ describe('MountainsService', () => {
     global.fetch = fetchMock as unknown as typeof fetch;
     kakaoLocalService = {
       searchMountainCoord: jest.fn(),
+    };
+    openMeteoService = {
+      getForecast: jest.fn(),
     };
     mountainCoordModel = {
       findOne: jest.fn(),
@@ -41,6 +47,10 @@ describe('MountainsService', () => {
         {
           provide: KakaoLocalService,
           useValue: kakaoLocalService,
+        },
+        {
+          provide: OpenMeteoService,
+          useValue: openMeteoService,
         },
         {
           provide: getModelToken(MountainCoord.name),
@@ -469,6 +479,168 @@ describe('MountainsService', () => {
         new NotFoundException('산 위치를 찾을 수 없습니다.'),
       );
       expect(mountainCoordModel.findOneAndUpdate).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('getWeather', () => {
+    const dto = {
+      name: '관악산',
+      region: '서울특별시 관악구',
+    };
+    const forecast = {
+      attribution: 'Weather data by Open-Meteo.com',
+      forecastUntil: '2026-09-13',
+      current: {
+        temperature: 24,
+        weatherCode: 2,
+        weatherLabel: '구름 조금',
+        precipitation: 0,
+        windSpeed: 3,
+      },
+      days: [
+        {
+          date: '2026-08-29',
+          weatherCode: 2,
+          weatherLabel: '구름 조금',
+          tMax: 28,
+          tMin: 18,
+          precipProb: 10,
+        },
+        {
+          date: '2026-08-30',
+          weatherCode: 61,
+          weatherLabel: '비',
+          tMax: 22,
+          tMin: 16,
+          precipProb: 80,
+        },
+        {
+          date: '2026-09-13',
+          weatherCode: 0,
+          weatherLabel: '맑음',
+          tMax: 25,
+          tMin: 15,
+          precipProb: 0,
+        },
+      ],
+    };
+
+    beforeEach(() => {
+      mountainCoordModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue({
+          externalId: '20000059',
+          name: '관악산',
+          region: dto.region,
+          lat: 37.4419,
+          lng: 126.9638,
+        }),
+      });
+      openMeteoService.getForecast.mockResolvedValue(forecast);
+    });
+
+    it('날짜가 없으면 오늘부터 최대 7일을 반환한다', async () => {
+      await expect(service.getWeather('20000059', dto)).resolves.toEqual({
+        attribution: forecast.attribution,
+        forecastUntil: '2026-09-13',
+        truncated: false,
+        tooOld: false,
+        current: forecast.current,
+        days: forecast.days.slice(0, 7),
+      });
+      expect(openMeteoService.getForecast).toHaveBeenCalledWith(37.4419, 126.9638, 0);
+    });
+
+    it('여정 시작일이 과거라면 지난 날짜도 포함한다', async () => {
+      const tripDays = [
+        {
+          date: '2026-08-25',
+          weatherCode: 0,
+          weatherLabel: '맑음',
+          tMax: 30,
+          tMin: 20,
+          precipProb: 0,
+        },
+        {
+          date: '2026-08-26',
+          weatherCode: 2,
+          weatherLabel: '구름 조금',
+          tMax: 29,
+          tMin: 19,
+          precipProb: 10,
+        },
+        {
+          date: '2026-08-27',
+          weatherCode: 3,
+          weatherLabel: '흐림',
+          tMax: 27,
+          tMin: 18,
+          precipProb: 20,
+        },
+        {
+          date: '2026-08-28',
+          weatherCode: 61,
+          weatherLabel: '비',
+          tMax: 24,
+          tMin: 17,
+          precipProb: 70,
+        },
+        forecast.days[0],
+      ];
+      openMeteoService.getForecast.mockResolvedValue({
+        ...forecast,
+        days: [...tripDays, forecast.days[2]],
+      });
+
+      await expect(
+        service.getWeather('20000059', {
+          ...dto,
+          startDate: '2026-08-25',
+          endDate: '2026-08-29',
+        }),
+      ).resolves.toEqual({
+        attribution: forecast.attribution,
+        forecastUntil: '2026-09-13',
+        truncated: false,
+        tooOld: false,
+        current: forecast.current,
+        days: tripDays,
+      });
+      expect(openMeteoService.getForecast).toHaveBeenCalledWith(37.4419, 126.9638, pastDaysFromStart('2026-08-25'));
+    });
+
+    it('여정 기간과 겹치는 날만 남기고 16일 이후는 자른다', async () => {
+      await expect(
+        service.getWeather('20000059', {
+          ...dto,
+          startDate: '2026-08-30',
+          endDate: '2026-09-20',
+        }),
+      ).resolves.toEqual({
+        attribution: forecast.attribution,
+        forecastUntil: '2026-09-13',
+        truncated: true,
+        tooOld: false,
+        current: forecast.current,
+        days: [forecast.days[1], forecast.days[2]],
+      });
+      expect(openMeteoService.getForecast).toHaveBeenCalledWith(37.4419, 126.9638, pastDaysFromStart('2026-08-30'));
+    });
+
+    it('예보보다 오래된 여정이면 tooOld다', async () => {
+      await expect(
+        service.getWeather('20000059', {
+          ...dto,
+          startDate: '2026-01-01',
+          endDate: '2026-01-03',
+        }),
+      ).resolves.toEqual({
+        attribution: forecast.attribution,
+        forecastUntil: '2026-09-13',
+        truncated: false,
+        tooOld: true,
+        current: forecast.current,
+        days: [],
+      });
     });
   });
 });

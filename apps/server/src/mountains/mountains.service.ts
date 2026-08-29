@@ -17,8 +17,11 @@ import {
   type MountainThemeCode,
 } from './constants/mountain-recommend';
 import { GetMountainDetailDto } from './dto/get-mountain-detail.dto';
+import { GetMountainWeatherDto } from './dto/get-mountain-weather.dto';
 import { RecommendMountainsDto } from './dto/recommend-mountains.dto';
 import { SearchMountainsDto } from './dto/search-mountains.dto';
+import { OpenMeteoService } from './open-meteo.service';
+import { OPEN_METEO_DETAIL_DAYS, pastDaysFromStart, sliceWeatherDays, type WeatherDay } from './open-meteo.util';
 import { MountainSearchType } from './types/mountain-search-type';
 
 const PAGE_SIZE = 20;
@@ -102,6 +105,21 @@ export interface MountainCoordResult {
   placeName?: string;
 }
 
+export interface MountainWeatherResult {
+  attribution: string;
+  forecastUntil: string | null;
+  truncated: boolean;
+  tooOld: boolean;
+  current: {
+    temperature: number | null;
+    weatherCode: number;
+    weatherLabel: string;
+    precipitation: number | null;
+    windSpeed: number | null;
+  } | null;
+  days: WeatherDay[];
+}
+
 @Injectable()
 export class MountainsService {
   private readonly logger = new Logger(MountainsService.name);
@@ -109,6 +127,7 @@ export class MountainsService {
   constructor(
     private readonly configService: ConfigService,
     private readonly kakaoLocalService: KakaoLocalService,
+    private readonly openMeteoService: OpenMeteoService,
     @InjectModel(MountainCoord.name) private readonly mountainCoordModel: Model<MountainCoordDocument>,
   ) {}
 
@@ -276,6 +295,35 @@ export class MountainsService {
       lat: saved?.lat ?? found.lat,
       lng: saved?.lng ?? found.lng,
       placeName: saved?.placeName ?? found.placeName,
+    };
+  }
+
+  async getWeather(id: string, dto: GetMountainWeatherDto): Promise<MountainWeatherResult> {
+    const coord = await this.getCoordinates(id, dto);
+    const startDate = dto.startDate?.trim();
+    const endDate = dto.endDate?.trim() || startDate;
+    const forecast = await this.openMeteoService.getForecast(coord.lat, coord.lng, pastDaysFromStart(startDate));
+
+    if (!startDate) {
+      return {
+        attribution: forecast.attribution,
+        forecastUntil: forecast.forecastUntil,
+        truncated: false,
+        tooOld: false,
+        current: forecast.current,
+        days: forecast.days.slice(0, OPEN_METEO_DETAIL_DAYS),
+      };
+    }
+
+    const sliced = sliceWeatherDays(forecast.days, startDate, endDate);
+
+    return {
+      attribution: forecast.attribution,
+      forecastUntil: sliced.forecastUntil,
+      truncated: sliced.truncated,
+      tooOld: sliced.tooOld,
+      current: forecast.current,
+      days: sliced.days,
     };
   }
 

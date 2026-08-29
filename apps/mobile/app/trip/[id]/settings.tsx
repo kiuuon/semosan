@@ -23,8 +23,10 @@ import Button from '../../../components/common/button/Button';
 import Divider from '../../../components/common/divider/Divider';
 import Input from '../../../components/common/input/Input';
 import Typography from '../../../components/common/typography/Typography';
+import { TripWeatherCard } from '../../../components/weather/WeatherCards';
 import { deleteTrip, getTrip, updateTrip } from '../../../lib/apis/trips';
 import { getMe } from '../../../lib/apis/auth';
+import { getMountainWeather } from '../../../lib/apis/mountains';
 import colors from '../../../lib/constants/colors';
 import { getMaxTripEndDate, isWithinMaxTripDays, MAX_TRIP_DAYS } from '../../../lib/utils/tripDateRange';
 
@@ -102,6 +104,32 @@ export default function TripSettingsScreen() {
 
   const isOwner = !!me && !!trip && me._id === trip.ownerId;
   const markedDates = useMemo(() => buildPeriodMarks(startDate, endDate), [startDate, endDate]);
+
+  const {
+    data: weather,
+    isPending: isWeatherPending,
+    isError: isWeatherError,
+  } = useQuery({
+    queryKey: [
+      'trip',
+      tripId,
+      'weather',
+      trip?.mountain.externalId,
+      trip?.mountain.name,
+      trip?.mountain.region,
+      trip?.startDate,
+      trip?.endDate,
+    ],
+    queryFn: () =>
+      getMountainWeather({
+        id: trip!.mountain.externalId,
+        name: trip!.mountain.name,
+        region: trip!.mountain.region,
+        startDate: toDateKey(trip!.startDate),
+        endDate: toDateKey(trip!.endDate),
+      }),
+    enabled: !!trip?.mountain.externalId && !!trip.mountain.name && !!trip.mountain.region,
+  });
 
   useEffect(() => {
     if (!trip || isEditing) return;
@@ -280,6 +308,8 @@ export default function TripSettingsScreen() {
                 <InfoRow label="산 이름" value={trip.mountain.name} />
               </View>
             </View>
+
+            <TripWeatherCard weather={weather} isPending={isWeatherPending} isError={isWeatherError} />
 
             <View style={styles.infoSection}>
               <Typography.Label color={colors.stone500}>{`참여 멤버 · ${trip.members.length}명`}</Typography.Label>
