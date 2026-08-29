@@ -6,6 +6,7 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { MountainsModule } from './mountains/mountains.module';
 import { PlacesModule } from './places/places.module';
+import { SupportModule } from './support/support.module';
 import { TripsModule } from './trips/trips.module';
 import { UsersModule } from './users/users.module';
 
@@ -24,6 +25,7 @@ import { UsersModule } from './users/users.module';
     MountainsModule,
     TripsModule,
     PlacesModule,
+    SupportModule,
   ],
   controllers: [AppController],
   providers: [AppService],
