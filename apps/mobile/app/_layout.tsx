@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import { useFonts } from 'expo-font';
+import * as SplashScreen from 'expo-splash-screen';
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -19,6 +20,8 @@ import { DMMono_500Medium } from '@expo-google-fonts/dm-mono';
 
 import { getApiErrorMessage } from '../lib/utils/getApiErrorMessage';
 import colors from '../lib/constants/colors';
+
+SplashScreen.preventAutoHideAsync();
 
 // 상단 인셋을 SafeAreaView가 아니라 각 화면의 contentStyle로 준다.
 // 이렇게 해야 풀블리드 화면이 <Stack.Screen options={{ contentStyle: { paddingTop: 0 } }} />로 개별 해제할 수 있다.
@@ -45,6 +48,12 @@ export default function RootLayout() {
     NotoSansKR_800ExtraBold,
     DMMono_500Medium,
   });
+
+  useEffect(() => {
+    if (fontsLoaded) {
+      SplashScreen.hide();
+    }
+  }, [fontsLoaded]);
 
   const [queryClient] = useState(
     () =>
