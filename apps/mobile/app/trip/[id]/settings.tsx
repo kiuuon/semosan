@@ -2,9 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  KeyboardAvoidingView,
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   Share,
@@ -19,6 +17,8 @@ import { Calendar, type DateData } from 'react-native-calendars';
 import Toast from 'react-native-toast-message';
 import { Ionicons } from '@expo/vector-icons';
 
+import DismissKeyboard from '../../../components/common/dismiss-keyboard/DismissKeyboard';
+import AppKeyboardAvoidingView from '../../../components/common/keyboard-avoiding/AppKeyboardAvoidingView';
 import Button from '../../../components/common/button/Button';
 import Divider from '../../../components/common/divider/Divider';
 import Input from '../../../components/common/input/Input';
@@ -261,134 +261,140 @@ export default function TripSettingsScreen() {
     : '날짜를 선택해주세요';
 
   return (
-    <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-        {isEditing ? (
-          <View style={styles.section}>
-            <Input label="일정 제목" value={title} onChangeText={setTitle} placeholder="일정 제목" />
+    <DismissKeyboard>
+      <AppKeyboardAvoidingView style={styles.root}>
+        <ScrollView
+          contentContainerStyle={styles.container}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+        >
+          {isEditing ? (
             <View style={styles.section}>
-              <Typography.Label>일정 날짜</Typography.Label>
-              <Typography.BodyBase color={colors.stone700}>{dateLabel}</Typography.BodyBase>
-              <Typography.Caption color={colors.stone500}>
-                시작일과 종료일을 순서대로 선택해주세요. 최대 {MAX_TRIP_DAYS}일까지 가능합니다.
-              </Typography.Caption>
-              <Calendar
-                markingType="period"
-                markedDates={markedDates}
-                onDayPress={handleDayPress}
-                maxDate={startDate && !endDate ? getMaxTripEndDate(startDate) : undefined}
-                theme={{
-                  todayTextColor: colors.forest700,
-                  arrowColor: colors.forest700,
-                  selectedDayBackgroundColor: colors.forest700,
-                  textDayFontFamily: 'NotoSansKR_400Regular',
-                  textMonthFontFamily: 'NotoSansKR_600SemiBold',
-                  textDayHeaderFontFamily: 'NotoSansKR_500Medium',
-                }}
-              />
-            </View>
-            <View style={styles.actions}>
-              <Button fullWidth variant="outline" disabled={isUpdatePending} onPress={handleCancelEdit}>
-                취소
-              </Button>
-              <Button fullWidth disabled={!canSubmit} loading={isUpdatePending} onPress={() => mutateUpdate()}>
-                저장
-              </Button>
-            </View>
-          </View>
-        ) : (
-          <>
-            <View style={styles.infoSection}>
-              <Typography.Label color={colors.stone500}>여정 정보</Typography.Label>
-              <View style={styles.card}>
-                <InfoRow label="여정 이름" value={trip.title || '제목 없음'} />
-                <Divider marginVertical={0} color={colors.stone100} />
-                <InfoRow label="기간" value={formatPeriod(trip.startDate, trip.endDate)} />
-                <Divider marginVertical={0} color={colors.stone100} />
-                <InfoRow label="산 이름" value={trip.mountain.name} />
+              <Input label="일정 제목" value={title} onChangeText={setTitle} placeholder="일정 제목" />
+              <View style={styles.section}>
+                <Typography.Label>일정 날짜</Typography.Label>
+                <Typography.BodyBase color={colors.stone700}>{dateLabel}</Typography.BodyBase>
+                <Typography.Caption color={colors.stone500}>
+                  시작일과 종료일을 순서대로 선택해주세요. 최대 {MAX_TRIP_DAYS}일까지 가능합니다.
+                </Typography.Caption>
+                <Calendar
+                  markingType="period"
+                  markedDates={markedDates}
+                  onDayPress={handleDayPress}
+                  maxDate={startDate && !endDate ? getMaxTripEndDate(startDate) : undefined}
+                  theme={{
+                    todayTextColor: colors.forest700,
+                    arrowColor: colors.forest700,
+                    selectedDayBackgroundColor: colors.forest700,
+                    textDayFontFamily: 'NotoSansKR_400Regular',
+                    textMonthFontFamily: 'NotoSansKR_600SemiBold',
+                    textDayHeaderFontFamily: 'NotoSansKR_500Medium',
+                  }}
+                />
+              </View>
+              <View style={styles.actions}>
+                <Button fullWidth variant="outline" disabled={isUpdatePending} onPress={handleCancelEdit}>
+                  취소
+                </Button>
+                <Button fullWidth disabled={!canSubmit} loading={isUpdatePending} onPress={() => mutateUpdate()}>
+                  저장
+                </Button>
               </View>
             </View>
-
-            <TripWeatherCard weather={weather} isPending={isWeatherPending} isError={isWeatherError} />
-
-            <View style={styles.infoSection}>
-              <Typography.Label color={colors.stone500}>{`참여 멤버 · ${trip.members.length}명`}</Typography.Label>
-              <View style={styles.card}>
-                {trip.members.length === 0 ? (
-                  <View style={styles.memberRow}>
-                    <Typography.BodyBase color={colors.stone500}>참여 멤버가 없습니다.</Typography.BodyBase>
-                  </View>
-                ) : (
-                  trip.members.map((member, index) => (
-                    <View key={member.userId}>
-                      <MemberRow nickname={member.nickname} isOwner={member.userId === trip.ownerId} />
-                      {index < trip.members.length - 1 && <Divider marginVertical={0} color={colors.stone100} />}
-                    </View>
-                  ))
-                )}
-              </View>
-            </View>
-
-            <View style={styles.card}>
-              <TouchableOpacity style={styles.actionRow} onPress={() => setIsInviteCodeVisible(true)}>
-                <Typography.BodyMedium color={colors.forest700}>초대코드 확인하기</Typography.BodyMedium>
-                <Ionicons name="chevron-forward" size={16} color={colors.stone300} />
-              </TouchableOpacity>
-            </View>
-
-            {isOwner && (
+          ) : (
+            <>
               <View style={styles.infoSection}>
-                <Typography.Label color={colors.stone500}>여정 관리</Typography.Label>
-                <View style={styles.actions}>
-                  <Button fullWidth variant="outline" onPress={handleStartEdit}>
-                    여정 수정
-                  </Button>
-                  <Button fullWidth variant="danger" loading={isDeletePending} onPress={handleDelete}>
-                    여정 삭제
-                  </Button>
+                <Typography.Label color={colors.stone500}>여정 정보</Typography.Label>
+                <View style={styles.card}>
+                  <InfoRow label="여정 이름" value={trip.title || '제목 없음'} />
+                  <Divider marginVertical={0} color={colors.stone100} />
+                  <InfoRow label="기간" value={formatPeriod(trip.startDate, trip.endDate)} />
+                  <Divider marginVertical={0} color={colors.stone100} />
+                  <InfoRow label="산 이름" value={trip.mountain.name} />
                 </View>
               </View>
-            )}
-          </>
-        )}
-      </ScrollView>
 
-      <Modal
-        visible={isInviteCodeVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setIsInviteCodeVisible(false)}
-      >
-        <Pressable style={styles.modalBackdrop} onPress={() => setIsInviteCodeVisible(false)}>
-          <Pressable style={styles.modalCard} onPress={(event) => event.stopPropagation()}>
-            <Typography.HeadingMd>초대코드</Typography.HeadingMd>
-            <Typography.Caption color={colors.stone500}>
-              친구에게 이 코드를 공유해 여정에 초대하세요.
-            </Typography.Caption>
-            <View style={styles.inviteCodeBox}>
-              <Typography.DataMonoLg color={colors.forest700}>{trip.inviteCode}</Typography.DataMonoLg>
-            </View>
-            <View style={styles.actions}>
-              <View style={styles.copyShareActions}>
-                <View style={{ flex: 1 }}>
-                  <Button variant="outline" fullWidth onPress={handleCopyInviteCode}>
-                    복사하기
-                  </Button>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Button fullWidth onPress={handleShareInviteCode}>
-                    공유하기
-                  </Button>
+              <TripWeatherCard weather={weather} isPending={isWeatherPending} isError={isWeatherError} />
+
+              <View style={styles.infoSection}>
+                <Typography.Label color={colors.stone500}>{`참여 멤버 · ${trip.members.length}명`}</Typography.Label>
+                <View style={styles.card}>
+                  {trip.members.length === 0 ? (
+                    <View style={styles.memberRow}>
+                      <Typography.BodyBase color={colors.stone500}>참여 멤버가 없습니다.</Typography.BodyBase>
+                    </View>
+                  ) : (
+                    trip.members.map((member, index) => (
+                      <View key={member.userId}>
+                        <MemberRow nickname={member.nickname} isOwner={member.userId === trip.ownerId} />
+                        {index < trip.members.length - 1 && <Divider marginVertical={0} color={colors.stone100} />}
+                      </View>
+                    ))
+                  )}
                 </View>
               </View>
-              <Button fullWidth variant="ghost" onPress={() => setIsInviteCodeVisible(false)}>
-                닫기
-              </Button>
-            </View>
+
+              <View style={styles.card}>
+                <TouchableOpacity style={styles.actionRow} onPress={() => setIsInviteCodeVisible(true)}>
+                  <Typography.BodyMedium color={colors.forest700}>초대코드 확인하기</Typography.BodyMedium>
+                  <Ionicons name="chevron-forward" size={16} color={colors.stone300} />
+                </TouchableOpacity>
+              </View>
+
+              {isOwner && (
+                <View style={styles.infoSection}>
+                  <Typography.Label color={colors.stone500}>여정 관리</Typography.Label>
+                  <View style={styles.actions}>
+                    <Button fullWidth variant="outline" onPress={handleStartEdit}>
+                      여정 수정
+                    </Button>
+                    <Button fullWidth variant="danger" loading={isDeletePending} onPress={handleDelete}>
+                      여정 삭제
+                    </Button>
+                  </View>
+                </View>
+              )}
+            </>
+          )}
+        </ScrollView>
+
+        <Modal
+          visible={isInviteCodeVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setIsInviteCodeVisible(false)}
+        >
+          <Pressable style={styles.modalBackdrop} onPress={() => setIsInviteCodeVisible(false)}>
+            <Pressable style={styles.modalCard} onPress={(event) => event.stopPropagation()}>
+              <Typography.HeadingMd>초대코드</Typography.HeadingMd>
+              <Typography.Caption color={colors.stone500}>
+                친구에게 이 코드를 공유해 여정에 초대하세요.
+              </Typography.Caption>
+              <View style={styles.inviteCodeBox}>
+                <Typography.DataMonoLg color={colors.forest700}>{trip.inviteCode}</Typography.DataMonoLg>
+              </View>
+              <View style={styles.actions}>
+                <View style={styles.copyShareActions}>
+                  <View style={{ flex: 1 }}>
+                    <Button variant="outline" fullWidth onPress={handleCopyInviteCode}>
+                      복사하기
+                    </Button>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Button fullWidth onPress={handleShareInviteCode}>
+                      공유하기
+                    </Button>
+                  </View>
+                </View>
+                <Button fullWidth variant="ghost" onPress={() => setIsInviteCodeVisible(false)}>
+                  닫기
+                </Button>
+              </View>
+            </Pressable>
           </Pressable>
-        </Pressable>
-      </Modal>
-    </KeyboardAvoidingView>
+        </Modal>
+      </AppKeyboardAvoidingView>
+    </DismissKeyboard>
   );
 }
 

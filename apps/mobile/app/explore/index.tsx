@@ -7,6 +7,7 @@ import { useQueryClient } from '@tanstack/react-query';
 
 import type { MountainSearchType } from '../../lib/apis/mountains';
 import colors from '../../lib/constants/colors';
+import DismissKeyboard from '../../components/common/dismiss-keyboard/DismissKeyboard';
 import Input from '../../components/common/input/Input';
 import BeforeSearch, { RECENT_SEARCHES_KEY, RECENT_SEARCHES_QUERY_KEY } from '../../components/explore/BeforeSearch';
 import AfterSearch from '../../components/explore/AfterSearch';
@@ -64,51 +65,57 @@ function Explore() {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.inputContainer}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={20} color={colors.stone300} />
-        </TouchableOpacity>
-        {submitted && submitted.type === 'region' ? (
-          <View style={styles.regionContainer}>
-            <Typography.HeadingMd>{`${submitted?.keyword} 지역으로 검색`}</Typography.HeadingMd>
-            <TouchableOpacity onPress={handleClear}>
-              <Ionicons name="close" size={20} color={colors.stone300} />
-            </TouchableOpacity>
-          </View>
+    <DismissKeyboard>
+      <View style={styles.container}>
+        <View style={styles.inputContainer}>
+          <TouchableOpacity onPress={() => router.back()}>
+            <Ionicons name="arrow-back" size={20} color={colors.stone300} />
+          </TouchableOpacity>
+          {submitted && submitted.type === 'region' ? (
+            <View style={styles.regionContainer}>
+              <Typography.HeadingMd>{`${submitted?.keyword} 지역으로 검색`}</Typography.HeadingMd>
+              <TouchableOpacity onPress={handleClear}>
+                <Ionicons name="close" size={20} color={colors.stone300} />
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.inputWrapper}>
+              <Input
+                placeholder="산 이름으로 검색"
+                value={inputValue}
+                onChangeText={handleChangeText}
+                autoFocus
+                returnKeyType="search"
+                onSubmitEditing={() => handleNameSearch(inputValue)}
+                accessoryRight={
+                  submitted ? (
+                    <TouchableOpacity onPress={handleClear}>
+                      <Ionicons name="close" size={20} color={colors.stone300} />
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity onPress={() => handleNameSearch(inputValue)}>
+                      <Ionicons name="search" size={20} color={colors.stone300} />
+                    </TouchableOpacity>
+                  )
+                }
+              />
+            </View>
+          )}
+        </View>
+
+        {submitted ? (
+          <AfterSearch keyword={submitted.keyword} type={submitted.type} />
         ) : (
-          <View style={styles.inputWrapper}>
-            <Input
-              placeholder="산 이름으로 검색"
-              value={inputValue}
-              onChangeText={handleChangeText}
-              autoFocus
-              returnKeyType="search"
-              onSubmitEditing={() => handleNameSearch(inputValue)}
-              accessoryRight={
-                submitted ? (
-                  <TouchableOpacity onPress={handleClear}>
-                    <Ionicons name="close" size={20} color={colors.stone300} />
-                  </TouchableOpacity>
-                ) : (
-                  <TouchableOpacity onPress={() => handleNameSearch(inputValue)}>
-                    <Ionicons name="search" size={20} color={colors.stone300} />
-                  </TouchableOpacity>
-                )
-              }
-            />
-          </View>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+          >
+            <BeforeSearch onSearch={handleNameSearch} onRegionPress={handleRegionSearch} />
+          </ScrollView>
         )}
       </View>
-
-      {submitted ? (
-        <AfterSearch keyword={submitted.keyword} type={submitted.type} />
-      ) : (
-        <ScrollView showsVerticalScrollIndicator={false}>
-          <BeforeSearch onSearch={handleNameSearch} onRegionPress={handleRegionSearch} />
-        </ScrollView>
-      )}
-    </View>
+    </DismissKeyboard>
   );
 }
 

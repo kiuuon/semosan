@@ -1,19 +1,12 @@
 import { useState } from 'react';
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  StyleSheet,
-  TextInput,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Modal, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { useMutation } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 
+import DismissKeyboard from '../common/dismiss-keyboard/DismissKeyboard';
+import AppKeyboardAvoidingView from '../common/keyboard-avoiding/AppKeyboardAvoidingView';
 import Typography from '../common/typography/Typography';
 import { submitSupportInquiry } from '../../lib/apis/support';
 import colors from '../../lib/constants/colors';
@@ -59,51 +52,51 @@ function ContactInquiryModal({ visible, nickname, email, onClose, onSubmitted }:
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={handleClose}>
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={8}
-      >
-        <View style={[styles.header, { paddingTop: Math.max(insets.top, 16) }]}>
-          <View style={styles.headerText}>
-            <Typography.HeadingLg ellipsis>문의 하기</Typography.HeadingLg>
-            <Typography.Caption color={colors.stone500}>문의 내용을 작성하면 관리자에게 전달됩니다.</Typography.Caption>
+      <AppKeyboardAvoidingView style={styles.container}>
+        <DismissKeyboard>
+          <View style={[styles.header, { paddingTop: Math.max(insets.top, 16) }]}>
+            <View style={styles.headerText}>
+              <Typography.HeadingLg ellipsis>문의 하기</Typography.HeadingLg>
+              <Typography.Caption color={colors.stone500}>
+                문의 내용을 작성하면 관리자에게 전달됩니다.
+              </Typography.Caption>
+            </View>
+            <Pressable onPress={handleClose} hitSlop={8} accessibilityRole="button" accessibilityLabel="닫기">
+              <Ionicons name="close" size={24} color={colors.stone700} />
+            </Pressable>
           </View>
-          <Pressable onPress={handleClose} hitSlop={8} accessibilityRole="button" accessibilityLabel="닫기">
-            <Ionicons name="close" size={24} color={colors.stone700} />
-          </Pressable>
-        </View>
 
-        <View style={styles.body}>
-          <TextInput
-            style={styles.input}
-            value={content}
-            onChangeText={setContent}
-            placeholder="문의 내용을 입력해 주세요"
-            placeholderTextColor={colors.stone300}
-            multiline
-            maxLength={2000}
-            autoFocus
-          />
-        </View>
+          <View style={styles.body}>
+            <TextInput
+              style={styles.input}
+              value={content}
+              onChangeText={setContent}
+              placeholder="문의 내용을 입력해 주세요"
+              placeholderTextColor={colors.stone300}
+              multiline
+              maxLength={2000}
+              autoFocus
+            />
+          </View>
 
-        <View style={[styles.composer, { paddingBottom: Math.max(insets.bottom, 12) }]}>
-          <Typography.Caption color={colors.stone500}>{content.length}/2000</Typography.Caption>
-          <Pressable
-            onPress={() => submitInquiry()}
-            disabled={!canSubmit}
-            style={[styles.sendButton, !canSubmit && styles.sendButtonDisabled]}
-            accessibilityRole="button"
-            accessibilityLabel="문의 보내기"
-          >
-            {isSubmitting ? (
-              <ActivityIndicator size="small" color={colors.white} />
-            ) : (
-              <Ionicons name="send" size={18} color={colors.white} />
-            )}
-          </Pressable>
-        </View>
-      </KeyboardAvoidingView>
+          <View style={[styles.composer, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+            <Typography.Caption color={colors.stone500}>{content.length}/2000</Typography.Caption>
+            <Pressable
+              onPress={() => submitInquiry()}
+              disabled={!canSubmit}
+              style={[styles.sendButton, !canSubmit && styles.sendButtonDisabled]}
+              accessibilityRole="button"
+              accessibilityLabel="문의 보내기"
+            >
+              {isSubmitting ? (
+                <ActivityIndicator size="small" color={colors.white} />
+              ) : (
+                <Ionicons name="send" size={18} color={colors.white} />
+              )}
+            </Pressable>
+          </View>
+        </DismissKeyboard>
+      </AppKeyboardAvoidingView>
     </Modal>
   );
 }

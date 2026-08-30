@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import Toast from 'react-native-toast-message';
 
+import DismissKeyboard from '../../components/common/dismiss-keyboard/DismissKeyboard';
+import AppKeyboardAvoidingView from '../../components/common/keyboard-avoiding/AppKeyboardAvoidingView';
 import Header from '../../components/common/header/Header';
 import Input from '../../components/common/input/Input';
 import Button from '../../components/common/button/Button';
@@ -38,24 +40,26 @@ const InviteCodeScreen = () => {
   return (
     <View style={styles.root}>
       <Header title="초대코드 입력" />
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <View style={styles.container}>
-          <Typography.BodyBase color={colors.stone500}>
-            전달받은 초대코드를 입력해주세요. 확인을 누르면 해당 일정에 바로 참여됩니다.
-          </Typography.BodyBase>
-          <View style={styles.inputContainer}>
-            <Input
-              placeholder="초대코드를 입력해주세요."
-              value={inviteCode}
-              onChangeText={(text) => setInviteCode(text.toUpperCase())}
-              autoFocus
-            />
+      <AppKeyboardAvoidingView style={styles.flex}>
+        <DismissKeyboard>
+          <View style={styles.container}>
+            <Typography.BodyBase color={colors.stone500}>
+              전달받은 초대코드를 입력해주세요. 확인을 누르면 해당 일정에 바로 참여됩니다.
+            </Typography.BodyBase>
+            <View style={styles.inputContainer}>
+              <Input
+                placeholder="초대코드를 입력해주세요."
+                value={inviteCode}
+                onChangeText={(text) => setInviteCode(text.toUpperCase())}
+                autoFocus
+              />
+            </View>
+            <Button size="md" fullWidth disabled={!canSubmit} loading={isPending} onPress={handleSubmit}>
+              확인
+            </Button>
           </View>
-          <Button size="md" fullWidth disabled={!canSubmit} loading={isPending} onPress={handleSubmit}>
-            확인
-          </Button>
-        </View>
-      </KeyboardAvoidingView>
+        </DismissKeyboard>
+      </AppKeyboardAvoidingView>
     </View>
   );
 };

@@ -4,6 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 
+import DismissKeyboard from '../../../components/common/dismiss-keyboard/DismissKeyboard';
 import Input from '../../../components/common/input/Input';
 import Typography from '../../../components/common/typography/Typography';
 import { searchPlaces, type PlaceSearchItem, type TourContentTypeId } from '../../../lib/apis/places';
@@ -161,135 +162,139 @@ export default function TripNearbyScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.searchArea}>
-        <Input
-          placeholder="장소 검색"
-          value={keywordInput}
-          onChangeText={handleChangeKeyword}
-          returnKeyType="search"
-          onSubmitEditing={submitKeyword}
-          accessoryRight={
-            <Pressable onPress={submitKeyword} hitSlop={8} accessibilityRole="button" accessibilityLabel="검색">
-              <Ionicons name="search" size={20} color={colors.stone300} />
-            </Pressable>
-          }
-        />
-
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.tabs}
-          style={styles.tabsScroll}
-        >
-          {PLACE_CATEGORIES.map((item) => {
-            const isActive = item.key === category;
-
-            return (
-              <Pressable
-                key={item.key}
-                onPress={() => setCategory(item.key)}
-                style={[styles.tabItem, isActive && styles.tabItemActive]}
-                accessibilityRole="button"
-                accessibilityState={{ selected: isActive }}
-              >
-                <Typography.Label color={isActive ? colors.white : colors.stone500}>{item.label}</Typography.Label>
+    <DismissKeyboard>
+      <View style={styles.container}>
+        <View style={styles.searchArea}>
+          <Input
+            placeholder="장소 검색"
+            value={keywordInput}
+            onChangeText={handleChangeKeyword}
+            returnKeyType="search"
+            onSubmitEditing={submitKeyword}
+            accessoryRight={
+              <Pressable onPress={submitKeyword} hitSlop={8} accessibilityRole="button" accessibilityLabel="검색">
+                <Ionicons name="search" size={20} color={colors.stone300} />
               </Pressable>
-            );
-          })}
-        </ScrollView>
-      </View>
-
-      <View style={styles.resultArea}>
-        {regions.length === 0 ? (
-          <View style={styles.centered}>
-            <Typography.BodyBase color={colors.stone500}>
-              {trip ? '검색 가능한 지역 정보가 없습니다.' : '여행 정보를 불러오는 중...'}
-            </Typography.BodyBase>
-          </View>
-        ) : isPending || (isFetching && !isFetchingNextPage && items.length === 0) ? (
-          <View style={styles.centered}>
-            <ActivityIndicator color={colors.forest700} />
-          </View>
-        ) : isError ? (
-          <View style={styles.centered}>
-            <Typography.BodyBase color={colors.stone500}>장소 정보를 불러오지 못했습니다.</Typography.BodyBase>
-          </View>
-        ) : items.length === 0 ? (
-          <View style={styles.centered}>
-            <Typography.BodyBase color={colors.stone500}>검색 결과가 없습니다.</Typography.BodyBase>
-          </View>
-        ) : (
-          <FlatList
-            style={styles.list}
-            data={items}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={styles.listContent}
-            showsVerticalScrollIndicator={false}
-            onEndReached={() => {
-              if (hasNextPage && !isFetchingNextPage) {
-                fetchNextPage();
-              }
-            }}
-            onEndReachedThreshold={0.4}
-            ListFooterComponent={
-              isFetchingNextPage ? (
-                <View style={styles.footer}>
-                  <ActivityIndicator color={colors.forest700} />
-                </View>
-              ) : null
             }
-            renderItem={({ item }) => {
-              const isAdded = addedPlacesByExternalId.has(item.id);
-              const isItemPending = pendingExternalId === item.id;
+          />
+
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.tabs}
+            style={styles.tabsScroll}
+          >
+            {PLACE_CATEGORIES.map((item) => {
+              const isActive = item.key === category;
 
               return (
-                <View style={styles.card}>
-                  <Pressable
-                    style={styles.cardMain}
-                    onPress={() => openPlaceDetail(item)}
-                    accessibilityRole="button"
-                    accessibilityLabel={`${item.name} 상세 보기`}
-                  >
-                    {item.imageUrl ? (
-                      <Image source={{ uri: item.imageUrl }} style={styles.image} />
-                    ) : (
-                      <View style={[styles.image, styles.imagePlaceholder]}>
-                        <Ionicons name="image" size={22} color={colors.stone500} />
-                      </View>
-                    )}
-                    <View style={styles.info}>
-                      <Typography.HeadingMd ellipsis>{item.name}</Typography.HeadingMd>
-                      <Typography.Caption color={colors.stone500} ellipsis>
-                        {item.address || '주소 정보 없음'}
-                      </Typography.Caption>
-                    </View>
-                  </Pressable>
-                  <Pressable
-                    onPress={() => toggleAddedPlace(item)}
-                    disabled={isItemPending}
-                    style={[styles.addButton, isAdded && styles.addButtonActive]}
-                    hitSlop={8}
-                    accessibilityRole="button"
-                    accessibilityLabel={isAdded ? '일정에서 제거' : '일정에 추가'}
-                  >
-                    {isItemPending ? (
-                      <ActivityIndicator size="small" color={isAdded ? colors.forest700 : colors.white} />
-                    ) : (
-                      <Ionicons
-                        name={isAdded ? 'checkmark' : 'add'}
-                        size={18}
-                        color={isAdded ? colors.forest700 : colors.white}
-                      />
-                    )}
-                  </Pressable>
-                </View>
+                <Pressable
+                  key={item.key}
+                  onPress={() => setCategory(item.key)}
+                  style={[styles.tabItem, isActive && styles.tabItemActive]}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: isActive }}
+                >
+                  <Typography.Label color={isActive ? colors.white : colors.stone500}>{item.label}</Typography.Label>
+                </Pressable>
               );
-            }}
-          />
-        )}
+            })}
+          </ScrollView>
+        </View>
+
+        <View style={styles.resultArea}>
+          {regions.length === 0 ? (
+            <View style={styles.centered}>
+              <Typography.BodyBase color={colors.stone500}>
+                {trip ? '검색 가능한 지역 정보가 없습니다.' : '여행 정보를 불러오는 중...'}
+              </Typography.BodyBase>
+            </View>
+          ) : isPending || (isFetching && !isFetchingNextPage && items.length === 0) ? (
+            <View style={styles.centered}>
+              <ActivityIndicator color={colors.forest700} />
+            </View>
+          ) : isError ? (
+            <View style={styles.centered}>
+              <Typography.BodyBase color={colors.stone500}>장소 정보를 불러오지 못했습니다.</Typography.BodyBase>
+            </View>
+          ) : items.length === 0 ? (
+            <View style={styles.centered}>
+              <Typography.BodyBase color={colors.stone500}>검색 결과가 없습니다.</Typography.BodyBase>
+            </View>
+          ) : (
+            <FlatList
+              style={styles.list}
+              data={items}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={styles.listContent}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="on-drag"
+              onEndReached={() => {
+                if (hasNextPage && !isFetchingNextPage) {
+                  fetchNextPage();
+                }
+              }}
+              onEndReachedThreshold={0.4}
+              ListFooterComponent={
+                isFetchingNextPage ? (
+                  <View style={styles.footer}>
+                    <ActivityIndicator color={colors.forest700} />
+                  </View>
+                ) : null
+              }
+              renderItem={({ item }) => {
+                const isAdded = addedPlacesByExternalId.has(item.id);
+                const isItemPending = pendingExternalId === item.id;
+
+                return (
+                  <View style={styles.card}>
+                    <Pressable
+                      style={styles.cardMain}
+                      onPress={() => openPlaceDetail(item)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${item.name} 상세 보기`}
+                    >
+                      {item.imageUrl ? (
+                        <Image source={{ uri: item.imageUrl }} style={styles.image} />
+                      ) : (
+                        <View style={[styles.image, styles.imagePlaceholder]}>
+                          <Ionicons name="image" size={22} color={colors.stone500} />
+                        </View>
+                      )}
+                      <View style={styles.info}>
+                        <Typography.HeadingMd ellipsis>{item.name}</Typography.HeadingMd>
+                        <Typography.Caption color={colors.stone500} ellipsis>
+                          {item.address || '주소 정보 없음'}
+                        </Typography.Caption>
+                      </View>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => toggleAddedPlace(item)}
+                      disabled={isItemPending}
+                      style={[styles.addButton, isAdded && styles.addButtonActive]}
+                      hitSlop={8}
+                      accessibilityRole="button"
+                      accessibilityLabel={isAdded ? '일정에서 제거' : '일정에 추가'}
+                    >
+                      {isItemPending ? (
+                        <ActivityIndicator size="small" color={isAdded ? colors.forest700 : colors.white} />
+                      ) : (
+                        <Ionicons
+                          name={isAdded ? 'checkmark' : 'add'}
+                          size={18}
+                          color={isAdded ? colors.forest700 : colors.white}
+                        />
+                      )}
+                    </Pressable>
+                  </View>
+                );
+              }}
+            />
+          )}
+        </View>
       </View>
-    </View>
+    </DismissKeyboard>
   );
 }
 

@@ -1,14 +1,7 @@
 import { useState } from 'react';
-import {
-  Alert,
-  Keyboard,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  TouchableWithoutFeedback,
-  View,
-} from 'react-native';
+import { Alert, ScrollView, StyleSheet, TouchableWithoutFeedback, View } from 'react-native';
+import DismissKeyboard from '../../common/dismiss-keyboard/DismissKeyboard';
+import AppKeyboardAvoidingView from '../../common/keyboard-avoiding/AppKeyboardAvoidingView';
 import { router } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Toast from 'react-native-toast-message';
@@ -103,9 +96,13 @@ const EditMyInfoScreen = () => {
   };
 
   return (
-    <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+    <AppKeyboardAvoidingView style={styles.flex}>
+      <DismissKeyboard>
+        <ScrollView
+          contentContainerStyle={styles.container}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+        >
           <View style={styles.subContainer}>
             <View style={styles.title}>
               <Typography.HeadingMd>기본 정보</Typography.HeadingMd>
@@ -204,8 +201,8 @@ const EditMyInfoScreen = () => {
             </TouchableWithoutFeedback>
           </View>
         </ScrollView>
-      </TouchableWithoutFeedback>
-    </KeyboardAvoidingView>
+      </DismissKeyboard>
+    </AppKeyboardAvoidingView>
   );
 };
 

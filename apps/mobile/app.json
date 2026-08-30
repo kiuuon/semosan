@@ -14,8 +14,7 @@
       "backgroundColor": "#1B4332"
     },
     "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.rlarlduf20.semosan"
+      "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
@@ -23,11 +22,7 @@
         "backgroundColor": "#1B4332"
       },
       "edgeToEdgeEnabled": true,
-      "permissions": [
-        "android.permission.ACCESS_COARSE_LOCATION",
-        "android.permission.ACCESS_FINE_LOCATION"
-      ],
-      "package": "com.rlarlduf20.semosan"
+      "softwareKeyboardLayoutMode": "pan"
     },
     "web": {
       "favicon": "./assets/favicon.png"
