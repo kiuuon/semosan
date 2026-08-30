@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { Stack } from 'expo-router';
 import { useFonts } from 'expo-font';
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Toast from 'react-native-toast-message';
 
+import DismissKeyboard from '../components/common/dismiss-keyboard/DismissKeyboard';
 import { AppToast } from '../components/common/toast/toastConfig';
 import {
   NotoSansKR_400Regular,
@@ -75,9 +77,13 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <SafeAreaProvider>
-        <SafeAreaView style={{ flex: 1 }} edges={['bottom']}>
-          <RootStack />
-        </SafeAreaView>
+        <KeyboardProvider preload={false} statusBarTranslucent navigationBarTranslucent preserveEdgeToEdge>
+          <SafeAreaView style={{ flex: 1 }} edges={['bottom']}>
+            <DismissKeyboard>
+              <RootStack />
+            </DismissKeyboard>
+          </SafeAreaView>
+        </KeyboardProvider>
       </SafeAreaProvider>
       <AppToast />
     </QueryClientProvider>

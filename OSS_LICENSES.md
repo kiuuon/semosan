@@ -16,14 +16,19 @@
 | `expo-constants` | 18.0.13 | MIT | [link](https://github.com/expo/expo) |
 | `expo-font` | 14.0.12 | MIT | [link](https://github.com/expo/expo) |
 | `expo-linking` | 8.0.12 | MIT | [link](https://github.com/expo/expo) |
+| `expo-location` | 19.0.8 | MIT | [link](https://github.com/expo/expo) |
 | `expo-router` | 6.0.24 | MIT | [link](https://github.com/expo/expo) |
 | `expo-secure-store` | 56.0.4 | MIT | [link](https://github.com/expo/expo) |
 | `expo-status-bar` | 3.0.9 | MIT | [link](https://github.com/expo/expo) |
 | `react` | 19.1.0 | MIT | [link](https://github.com/facebook/react) |
 | `react-native` | 0.81.5 | MIT | [link](https://github.com/facebook/react-native) |
 | `react-native-calendars` | 1.1314.0 | MIT | [link](https://github.com/wix/react-native-calendars) |
+| `react-native-keyboard-controller` | 1.18.5 | MIT | [link](https://github.com/kirillzyusko/react-native-keyboard-controller) |
+| `react-native-maps` | 1.20.1 | MIT | [link](https://github.com/react-native-maps/react-native-maps) |
+| `react-native-reanimated` | 4.1.1 | MIT | [link](https://github.com/software-mansion/react-native-reanimated) |
 | `react-native-safe-area-context` | 5.6.2 | MIT | [link](https://github.com/AppAndFlow/react-native-safe-area-context) |
 | `react-native-screens` | 4.16.0 | MIT | [link](https://github.com/software-mansion/react-native-screens) |
 | `react-native-svg` | 15.12.1 | MIT | [link](https://github.com/react-native-community/react-native-svg) |
 | `react-native-toast-message` | 2.3.3 | MIT | [link](https://github.com/calintamas/react-native-toast-message) |
+| `react-native-worklets` | 0.5.1 | MIT | [link](https://github.com/software-mansion/react-native-reanimated) |
 

@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Calendar, type DateData } from 'react-native-calendars';
 import Toast from 'react-native-toast-message';
 
+import DismissKeyboard from '../../components/common/dismiss-keyboard/DismissKeyboard';
+import AppKeyboardAvoidingView from '../../components/common/keyboard-avoiding/AppKeyboardAvoidingView';
 import Header from '../../components/common/header/Header';
 import Input from '../../components/common/input/Input';
 import Button from '../../components/common/button/Button';
@@ -137,44 +139,50 @@ export default function CreateTripScreen() {
   return (
     <View style={styles.root}>
       <Header title="일정 만들기" />
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-          <View style={styles.section}>
-            <Typography.HeadingMd>{mountainName || '산'}</Typography.HeadingMd>
-            <Typography.Caption color={colors.stone500}>{mountainRegion || '지역 정보 없음'}</Typography.Caption>
-          </View>
+      <AppKeyboardAvoidingView style={styles.flex}>
+        <DismissKeyboard>
+          <ScrollView
+            style={styles.flex}
+            contentContainerStyle={styles.container}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+          >
+            <View style={styles.section}>
+              <Typography.HeadingMd>{mountainName || '산'}</Typography.HeadingMd>
+              <Typography.Caption color={colors.stone500}>{mountainRegion || '지역 정보 없음'}</Typography.Caption>
+            </View>
 
-          <Input label="일정 제목" placeholder={`${mountainName} 산행`} value={title} onChangeText={setTitle} />
+            <Input label="일정 제목" placeholder={`${mountainName} 산행`} value={title} onChangeText={setTitle} />
 
-          <View style={styles.section}>
-            <Typography.Label>일정 날짜</Typography.Label>
-            <Typography.BodyBase color={colors.stone700}>{dateLabel}</Typography.BodyBase>
-            <Typography.Caption color={colors.stone500}>
-              시작일과 종료일을 순서대로 선택해주세요. 최대 {MAX_TRIP_DAYS}일까지 가능합니다.
-            </Typography.Caption>
-            <Calendar
-              markingType="period"
-              markedDates={markedDates}
-              onDayPress={handleDayPress}
-              maxDate={startDate && !endDate ? getMaxTripEndDate(startDate) : undefined}
-              theme={{
-                todayTextColor: colors.forest700,
-                arrowColor: colors.forest700,
-                selectedDayBackgroundColor: colors.forest700,
-                textDayFontFamily: 'NotoSansKR_400Regular',
-                textMonthFontFamily: 'NotoSansKR_600SemiBold',
-                textDayHeaderFontFamily: 'NotoSansKR_500Medium',
-              }}
-            />
-          </View>
-        </ScrollView>
-
+            <View style={styles.section}>
+              <Typography.Label>일정 날짜</Typography.Label>
+              <Typography.BodyBase color={colors.stone700}>{dateLabel}</Typography.BodyBase>
+              <Typography.Caption color={colors.stone500}>
+                시작일과 종료일을 순서대로 선택해주세요. 최대 {MAX_TRIP_DAYS}일까지 가능합니다.
+              </Typography.Caption>
+              <Calendar
+                markingType="period"
+                markedDates={markedDates}
+                onDayPress={handleDayPress}
+                maxDate={startDate && !endDate ? getMaxTripEndDate(startDate) : undefined}
+                theme={{
+                  todayTextColor: colors.forest700,
+                  arrowColor: colors.forest700,
+                  selectedDayBackgroundColor: colors.forest700,
+                  textDayFontFamily: 'NotoSansKR_400Regular',
+                  textMonthFontFamily: 'NotoSansKR_600SemiBold',
+                  textDayHeaderFontFamily: 'NotoSansKR_500Medium',
+                }}
+              />
+            </View>
+          </ScrollView>
+        </DismissKeyboard>
         <View style={styles.footer}>
           <Button fullWidth disabled={!canSubmit} loading={isPending} onPress={handleSubmit}>
             일정 만들기
           </Button>
         </View>
-      </KeyboardAvoidingView>
+      </AppKeyboardAvoidingView>
     </View>
   );
 }

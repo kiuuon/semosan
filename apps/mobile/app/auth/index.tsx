@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 
+import DismissKeyboard from '../../components/common/dismiss-keyboard/DismissKeyboard';
+import AppKeyboardAvoidingView from '../../components/common/keyboard-avoiding/AppKeyboardAvoidingView';
 import Header from '../../components/common/header/Header';
 import SignIn from '../../components/auth/sign-in/SignIn';
 import SignUp from '../../components/auth/sign-up/SignUp';
@@ -29,15 +31,17 @@ export default function AuthScreen() {
     <View style={styles.container}>
       <Header title={TITLES[mode]} onBack={handleBack} />
 
-      <KeyboardAvoidingView style={styles.body} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        {mode === 'signUp' ? (
-          <SignUp />
-        ) : mode === 'findPassword' ? (
-          <FindPassword onSuccess={() => setMode('signIn')} />
-        ) : (
-          <SignIn onSwitchToSignUp={() => setMode('signUp')} onSwitchToFindPassword={() => setMode('findPassword')} />
-        )}
-      </KeyboardAvoidingView>
+      <AppKeyboardAvoidingView style={styles.body}>
+        <DismissKeyboard>
+          {mode === 'signUp' ? (
+            <SignUp />
+          ) : mode === 'findPassword' ? (
+            <FindPassword onSuccess={() => setMode('signIn')} />
+          ) : (
+            <SignIn onSwitchToSignUp={() => setMode('signUp')} onSwitchToFindPassword={() => setMode('findPassword')} />
+          )}
+        </DismissKeyboard>
+      </AppKeyboardAvoidingView>
     </View>
   );
 }

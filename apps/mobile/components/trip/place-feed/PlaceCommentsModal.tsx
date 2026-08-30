@@ -1,20 +1,10 @@
-import { useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  StyleSheet,
-  TextInput,
-  View,
-} from 'react-native';
+import { useRef, useState } from 'react';
+import { ActivityIndicator, Alert, FlatList, Modal, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
+import AppKeyboardAvoidingView from '../../common/keyboard-avoiding/AppKeyboardAvoidingView';
 import Typography from '../../common/typography/Typography';
 import { getMe } from '../../../lib/apis/auth';
 import {
@@ -57,6 +47,8 @@ function formatCommentTime(value: string) {
 function PlaceCommentsModal({ visible, tripId, placeId, placeName, onClose }: PlaceCommentsModalProps) {
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
+  const listRef = useRef<FlatList<TripPlaceComment>>(null);
+  const shouldScrollToEndRef = useRef(false);
   const [content, setContent] = useState('');
 
   const { data: me } = useQuery({
@@ -82,6 +74,7 @@ function PlaceCommentsModal({ visible, tripId, placeId, placeName, onClose }: Pl
     mutationFn: () => addTripPlaceComment(tripId, placeId, content),
     onSuccess: async () => {
       setContent('');
+      shouldScrollToEndRef.current = true;
       await invalidateComments();
     },
   });
@@ -106,13 +99,20 @@ function PlaceCommentsModal({ visible, tripId, placeId, placeName, onClose }: Pl
     ]);
   };
 
+  const scrollToLatestComment = () => {
+    if (!shouldScrollToEndRef.current || comments.length === 0) {
+      return;
+    }
+
+    shouldScrollToEndRef.current = false;
+    requestAnimationFrame(() => {
+      listRef.current?.scrollToEnd({ animated: true });
+    });
+  };
+
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={8}
-      >
+      <AppKeyboardAvoidingView style={styles.container}>
         <View style={[styles.header, { paddingTop: Math.max(insets.top, 16) }]}>
           <View style={styles.headerText}>
             <Typography.HeadingLg ellipsis>댓글</Typography.HeadingLg>
@@ -131,9 +131,14 @@ function PlaceCommentsModal({ visible, tripId, placeId, placeName, onClose }: Pl
           </View>
         ) : (
           <FlatList
+            ref={listRef}
+            style={styles.flex}
             data={comments}
             keyExtractor={(item) => item._id}
             contentContainerStyle={styles.list}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+            onContentSizeChange={scrollToLatestComment}
             ListEmptyComponent={
               <View style={styles.centered}>
                 <Typography.BodyBase color={colors.stone500}>아직 댓글이 없습니다.</Typography.BodyBase>
@@ -193,7 +198,7 @@ function PlaceCommentsModal({ visible, tripId, placeId, placeName, onClose }: Pl
             )}
           </Pressable>
         </View>
-      </KeyboardAvoidingView>
+      </AppKeyboardAvoidingView>
     </Modal>
   );
 }
@@ -202,6 +207,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.white,
+  },
+  flex: {
+    flex: 1,
   },
   header: {
     flexDirection: 'row',

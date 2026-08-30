@@ -54,6 +54,8 @@ function AfterSearch({ keyword, type = 'name' }: AfterSearchProps) {
       keyExtractor={(item) => item.id}
       contentContainerStyle={styles.list}
       showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="on-drag"
       onEndReached={() => {
         if (hasNextPage && !isFetchingNextPage) {
           fetchNextPage();

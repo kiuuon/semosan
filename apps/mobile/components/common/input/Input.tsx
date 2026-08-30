@@ -103,9 +103,13 @@ const styles = StyleSheet.create({
   },
   textInput: {
     flex: 1,
+    alignSelf: 'stretch',
+    paddingVertical: 0,
     fontSize: 14,
     fontFamily: 'NotoSansKR_400Regular',
     color: colors.stone900,
+    textAlignVertical: 'center',
+    includeFontPadding: false,
   },
   accessoryLeft: {
     marginRight: 8,
