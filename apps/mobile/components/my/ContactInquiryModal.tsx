@@ -1,12 +1,15 @@
 import { useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { useMutation } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 
 import DismissKeyboard from '../common/dismiss-keyboard/DismissKeyboard';
+import { useKeyboardState } from 'react-native-keyboard-controller';
+
 import AppKeyboardAvoidingView from '../common/keyboard-avoiding/AppKeyboardAvoidingView';
+import AppSheetModal from '../common/modal/AppSheetModal';
 import Typography from '../common/typography/Typography';
 import { submitSupportInquiry } from '../../lib/apis/support';
 import colors from '../../lib/constants/colors';
@@ -20,7 +23,21 @@ interface ContactInquiryModalProps {
 }
 
 function ContactInquiryModal({ visible, nickname, email, onClose, onSubmitted }: ContactInquiryModalProps) {
+  return (
+    <AppSheetModal visible={visible} onRequestClose={onClose}>
+      <ContactInquiryModalBody nickname={nickname} email={email} onClose={onClose} onSubmitted={onSubmitted} />
+    </AppSheetModal>
+  );
+}
+
+function ContactInquiryModalBody({
+  nickname,
+  email,
+  onClose,
+  onSubmitted,
+}: Omit<ContactInquiryModalProps, 'visible'>) {
   const insets = useSafeAreaInsets();
+  const isKeyboardVisible = useKeyboardState((state) => state.isVisible);
   const [content, setContent] = useState('');
 
   const { mutate: submitInquiry, isPending: isSubmitting } = useMutation({
@@ -51,8 +68,7 @@ function ContactInquiryModal({ visible, nickname, email, onClose, onSubmitted }:
   };
 
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={handleClose}>
-      <AppKeyboardAvoidingView style={styles.container}>
+    <AppKeyboardAvoidingView style={styles.container} edgeToBottom>
         <DismissKeyboard>
           <View style={[styles.header, { paddingTop: Math.max(insets.top, 16) }]}>
             <View style={styles.headerText}>
@@ -79,7 +95,7 @@ function ContactInquiryModal({ visible, nickname, email, onClose, onSubmitted }:
             />
           </View>
 
-          <View style={[styles.composer, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+          <View style={[styles.composer, { paddingBottom: isKeyboardVisible ? 12 : Math.max(insets.bottom, 12) }]}>
             <Typography.Caption color={colors.stone500}>{content.length}/2000</Typography.Caption>
             <Pressable
               onPress={() => submitInquiry()}
@@ -96,8 +112,7 @@ function ContactInquiryModal({ visible, nickname, email, onClose, onSubmitted }:
             </Pressable>
           </View>
         </DismissKeyboard>
-      </AppKeyboardAvoidingView>
-    </Modal>
+    </AppKeyboardAvoidingView>
   );
 }
 

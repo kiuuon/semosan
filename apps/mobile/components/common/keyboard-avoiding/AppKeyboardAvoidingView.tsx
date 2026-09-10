@@ -9,16 +9,23 @@ type AppKeyboardAvoidingViewProps = {
   children: ReactNode;
   style?: StyleProp<ViewStyle>;
   extraOffset?: number;
+  /** 하단 세이프 에어리어까지 그려진 시트/모달. 기본 화면(SafeAreaView)에서는 켜지 않는다. */
+  edgeToBottom?: boolean;
 };
 
-export default function AppKeyboardAvoidingView({ children, style, extraOffset = 0 }: AppKeyboardAvoidingViewProps) {
+export default function AppKeyboardAvoidingView({
+  children,
+  style,
+  extraOffset = 0,
+  edgeToBottom = false,
+}: AppKeyboardAvoidingViewProps) {
   const insets = useSafeAreaInsets();
 
   return (
     <KeyboardAvoidingView
       style={[styles.fill, style]}
       behavior="padding"
-      keyboardVerticalOffset={DEFAULT_OFFSET + insets.bottom + extraOffset}
+      keyboardVerticalOffset={DEFAULT_OFFSET + (edgeToBottom ? 0 : insets.bottom) + extraOffset}
     >
       {children}
     </KeyboardAvoidingView>

@@ -1,10 +1,13 @@
 import { useRef, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Modal, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
+import { useKeyboardState } from 'react-native-keyboard-controller';
+
 import AppKeyboardAvoidingView from '../../common/keyboard-avoiding/AppKeyboardAvoidingView';
+import AppSheetModal from '../../common/modal/AppSheetModal';
 import Typography from '../../common/typography/Typography';
 import { getMe } from '../../../lib/apis/auth';
 import {
@@ -44,8 +47,23 @@ function formatCommentTime(value: string) {
   return `${date.getFullYear()}.${date.getMonth() + 1}.${date.getDate()} ${time}`;
 }
 
-function FeedPostCommentsModal({ visible, tripId, postId, authorNickname, onClose }: FeedPostCommentsModalProps) {
+function FeedPostCommentsModal({ visible, onClose, ...props }: FeedPostCommentsModalProps) {
+  return (
+    <AppSheetModal visible={visible} onRequestClose={onClose}>
+      <FeedPostCommentsModalBody visible={visible} {...props} onClose={onClose} />
+    </AppSheetModal>
+  );
+}
+
+function FeedPostCommentsModalBody({
+  visible,
+  tripId,
+  postId,
+  authorNickname,
+  onClose,
+}: FeedPostCommentsModalProps) {
   const insets = useSafeAreaInsets();
+  const isKeyboardVisible = useKeyboardState((state) => state.isVisible);
   const queryClient = useQueryClient();
   const listRef = useRef<FlatList<TripFeedPostComment>>(null);
   const shouldScrollToEndRef = useRef(false);
@@ -111,8 +129,7 @@ function FeedPostCommentsModal({ visible, tripId, postId, authorNickname, onClos
   };
 
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <AppKeyboardAvoidingView style={styles.container}>
+    <AppKeyboardAvoidingView style={styles.container} edgeToBottom>
         <View style={[styles.header, { paddingTop: Math.max(insets.top, 16) }]}>
           <View style={styles.headerText}>
             <Typography.HeadingLg ellipsis>댓글</Typography.HeadingLg>
@@ -174,7 +191,7 @@ function FeedPostCommentsModal({ visible, tripId, postId, authorNickname, onClos
           />
         )}
 
-        <View style={[styles.composer, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+        <View style={[styles.composer, { paddingBottom: isKeyboardVisible ? 12 : Math.max(insets.bottom, 12) }]}>
           <TextInput
             style={styles.input}
             value={content}
@@ -198,8 +215,7 @@ function FeedPostCommentsModal({ visible, tripId, postId, authorNickname, onClos
             )}
           </Pressable>
         </View>
-      </AppKeyboardAvoidingView>
-    </Modal>
+    </AppKeyboardAvoidingView>
   );
 }
 

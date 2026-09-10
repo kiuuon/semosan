@@ -1,11 +1,14 @@
 import { useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import DismissKeyboard from '../../common/dismiss-keyboard/DismissKeyboard';
+import { useKeyboardState } from 'react-native-keyboard-controller';
+
 import AppKeyboardAvoidingView from '../../common/keyboard-avoiding/AppKeyboardAvoidingView';
+import AppSheetModal from '../../common/modal/AppSheetModal';
 import Typography from '../../common/typography/Typography';
 import { createTripFeedPost } from '../../../lib/apis/trips';
 import colors from '../../../lib/constants/colors';
@@ -17,7 +20,16 @@ interface FeedPostComposeModalProps {
 }
 
 function FeedPostComposeModal({ visible, tripId, onClose }: FeedPostComposeModalProps) {
+  return (
+    <AppSheetModal visible={visible} onRequestClose={onClose}>
+      <FeedPostComposeModalBody tripId={tripId} onClose={onClose} />
+    </AppSheetModal>
+  );
+}
+
+function FeedPostComposeModalBody({ tripId, onClose }: Omit<FeedPostComposeModalProps, 'visible'>) {
   const insets = useSafeAreaInsets();
+  const isKeyboardVisible = useKeyboardState((state) => state.isVisible);
   const queryClient = useQueryClient();
   const [content, setContent] = useState('');
 
@@ -41,8 +53,7 @@ function FeedPostComposeModal({ visible, tripId, onClose }: FeedPostComposeModal
   };
 
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={handleClose}>
-      <AppKeyboardAvoidingView style={styles.container}>
+    <AppKeyboardAvoidingView style={styles.container} edgeToBottom>
         <DismissKeyboard>
           <View style={[styles.header, { paddingTop: Math.max(insets.top, 16) }]}>
             <View style={styles.headerText}>
@@ -67,7 +78,7 @@ function FeedPostComposeModal({ visible, tripId, onClose }: FeedPostComposeModal
             />
           </View>
 
-          <View style={[styles.composer, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+          <View style={[styles.composer, { paddingBottom: isKeyboardVisible ? 12 : Math.max(insets.bottom, 12) }]}>
             <Typography.Caption color={colors.stone500}>{content.length}/2000</Typography.Caption>
             <Pressable
               onPress={() => submitPost()}
@@ -84,8 +95,7 @@ function FeedPostComposeModal({ visible, tripId, onClose }: FeedPostComposeModal
             </Pressable>
           </View>
         </DismissKeyboard>
-      </AppKeyboardAvoidingView>
-    </Modal>
+    </AppKeyboardAvoidingView>
   );
 }
 
