@@ -249,15 +249,6 @@ export default function HomeScreen() {
         <View style={styles.actionButtons}>
           <TouchableOpacity
             style={styles.settingsButton}
-            onPress={() => {}}
-            hitSlop={8}
-            accessibilityRole="button"
-            accessibilityLabel="알림 열기"
-          >
-            <Ionicons name="notifications-outline" size={22} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.settingsButton}
             onPress={() => setIsMyDrawerOpen(true)}
             hitSlop={8}
             accessibilityRole="button"

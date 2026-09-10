@@ -10,10 +10,9 @@ import colors from '../../../lib/constants/colors';
 interface TripHeaderProps {
   title: string;
   onMapPress?: () => void;
-  onNotificationPress?: () => void;
 }
 
-function TripHeader({ title, onMapPress, onNotificationPress }: TripHeaderProps) {
+function TripHeader({ title, onMapPress }: TripHeaderProps) {
   const [isMyDrawerOpen, setIsMyDrawerOpen] = useState(false);
 
   return (
@@ -34,15 +33,6 @@ function TripHeader({ title, onMapPress, onNotificationPress }: TripHeaderProps)
             accessibilityLabel="지도 열기"
           >
             <Ionicons name="map-outline" size={22} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.settingsButton}
-            onPress={onNotificationPress}
-            hitSlop={8}
-            accessibilityRole="button"
-            accessibilityLabel="알림 열기"
-          >
-            <Ionicons name="notifications-outline" size={22} />
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.settingsButton}
