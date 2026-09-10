@@ -361,21 +361,50 @@ export class MountainsService {
     try {
       const response = await fetch(url);
       if (!response.ok) {
-        throw new Error(`Forest API HTTP ${response.status}`);
+        const rawBody = await response.text().catch(() => '');
+        throw new Error(`HTTP ${response.status} body=${this.truncateBody(rawBody)}`);
       }
       data = (await response.json()) as ForestApiResponse;
     } catch (error) {
-      this.logger.error('Failed to fetch forest mountain API', error);
-      throw new InternalServerErrorException('산 정보를 불러오지 못했습니다.');
+      this.throwForestRequestError(this.formatUnknownError(error), error);
     }
 
     const resultCode = data.response?.header?.resultCode;
     if (resultCode && resultCode !== '00') {
-      this.logger.error(`Forest API error: ${data.response?.header?.resultMsg ?? resultCode}`);
-      throw new InternalServerErrorException('산 정보를 불러오지 못했습니다.');
+      const cause = `resultCode=${resultCode} resultMsg=${data.response?.header?.resultMsg ?? ''}`;
+      this.throwForestRequestError(cause);
     }
 
     return data.response?.body;
+  }
+
+  private throwForestRequestError(cause: string, error?: unknown): never {
+    this.logger.error(
+      `Failed to fetch forest mountain API: ${cause}`,
+      error instanceof Error ? error.stack : undefined,
+    );
+    throw new InternalServerErrorException(`산 정보를 불러오지 못했습니다. (${cause})`, {
+      cause: error instanceof Error ? error : undefined,
+    });
+  }
+
+  private formatUnknownError(error: unknown): string {
+    if (!(error instanceof Error)) {
+      return String(error);
+    }
+
+    const parts = [`${error.name}: ${error.message}`];
+    if (error.cause instanceof Error) {
+      parts.push(`${error.cause.name}: ${error.cause.message}`);
+    } else if (error.cause !== undefined) {
+      parts.push(String(error.cause));
+    }
+
+    return parts.join(' | ');
+  }
+
+  private truncateBody(raw: string): string {
+    return raw.replace(/\s+/g, ' ').trim().slice(0, 500);
   }
 
   private buildUrl({
@@ -465,7 +494,10 @@ export class MountainsService {
       if (url.searchParams.has('atchFileId') && !url.searchParams.get('atchFileId')?.trim()) {
         return '';
       }
-      return raw.trim();
+      if (url.protocol === 'http:') {
+        url.protocol = 'https:';
+      }
+      return url.toString();
     } catch {
       return /atchFileId=(?:&|$)/.test(raw) ? '' : raw.trim();
     }

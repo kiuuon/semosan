@@ -210,6 +210,41 @@ describe('MountainsService', () => {
     expect(result.items[0].imageUrl).toBe('');
   });
 
+  it('http 산 사진 URL은 https로 바꿔 반환한다', async () => {
+    configService.get.mockReturnValue('test-service-key');
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        response: {
+          header: { resultCode: '00' },
+          body: {
+            items: {
+              item: {
+                mntnid: '4',
+                mntnnm: '사진산',
+                mntninfopoflc: '서울특별시',
+                mntninfohght: 100,
+                mntnattchimageseq:
+                  'http://www.forest.go.kr/newkfsweb/cmm/fms/getImage.do?fileSn=1&atchFileId=FILE_123',
+              },
+            },
+            totalCount: 1,
+          },
+        },
+      }),
+    });
+
+    const result = await service.search({
+      keyword: '사진',
+      type: MountainSearchType.NAME,
+      page: 1,
+    });
+
+    expect(result.items[0].imageUrl).toBe(
+      'https://www.forest.go.kr/newkfsweb/cmm/fms/getImage.do?fileSn=1&atchFileId=FILE_123',
+    );
+  });
+
   it('단일 item도 배열로 정규화한다', async () => {
     configService.get.mockReturnValue('test-service-key');
     fetchMock.mockResolvedValue({
@@ -250,11 +285,12 @@ describe('MountainsService', () => {
     ]);
   });
 
-  it('산림청 API HTTP 오류면 InternalServerErrorException을 던진다', async () => {
+  it('산림청 API HTTP 오류면 상태와 본문을 예외에 담는다', async () => {
     configService.get.mockReturnValue('test-service-key');
     fetchMock.mockResolvedValue({
       ok: false,
-      status: 500,
+      status: 502,
+      text: async () => '<html>Bad Gateway</html>',
     });
 
     await expect(
@@ -263,10 +299,43 @@ describe('MountainsService', () => {
         type: MountainSearchType.NAME,
         page: 1,
       }),
-    ).rejects.toThrow(new InternalServerErrorException('산 정보를 불러오지 못했습니다.'));
+    ).rejects.toThrow('산 정보를 불러오지 못했습니다. (Error: HTTP 502 body=<html>Bad Gateway</html>)');
   });
 
-  it('산림청 API resultCode가 실패면 InternalServerErrorException을 던진다', async () => {
+  it('산림청 API JSON 파싱에 실패하면 예외에 담는다', async () => {
+    configService.get.mockReturnValue('test-service-key');
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => {
+        throw new SyntaxError('Unexpected token < in JSON');
+      },
+    });
+
+    await expect(
+      service.search({
+        keyword: '북한산',
+        type: MountainSearchType.NAME,
+        page: 1,
+      }),
+    ).rejects.toThrow('산 정보를 불러오지 못했습니다. (SyntaxError: Unexpected token < in JSON)');
+  });
+
+  it('산림청 API fetch가 실패하면 cause까지 예외에 담는다', async () => {
+    configService.get.mockReturnValue('test-service-key');
+    const fetchError = new Error('fetch failed');
+    fetchError.cause = new Error('ConnectTimeoutError');
+    fetchMock.mockRejectedValue(fetchError);
+
+    await expect(
+      service.search({
+        keyword: '북한산',
+        type: MountainSearchType.NAME,
+        page: 1,
+      }),
+    ).rejects.toThrow('산 정보를 불러오지 못했습니다. (Error: fetch failed | Error: ConnectTimeoutError)');
+  });
+
+  it('산림청 API resultCode가 실패면 코드와 메시지를 예외에 담는다', async () => {
     configService.get.mockReturnValue('test-service-key');
     fetchMock.mockResolvedValue({
       ok: true,
@@ -283,7 +352,11 @@ describe('MountainsService', () => {
         type: MountainSearchType.NAME,
         page: 1,
       }),
-    ).rejects.toThrow(new InternalServerErrorException('산 정보를 불러오지 못했습니다.'));
+    ).rejects.toThrow(
+      new InternalServerErrorException(
+        '산 정보를 불러오지 못했습니다. (resultCode=99 resultMsg=SERVICE ERROR)',
+      ),
+    );
   });
 
   describe('getDetail', () => {
@@ -338,7 +411,7 @@ describe('MountainsService', () => {
         name: '관악산',
         region: '서울특별시 관악구ㆍ금천구, 경기도 안양시ㆍ과천시',
         height: 632,
-        imageUrl: 'http://www.forest.go.kr/newkfsweb/cmm/fms/getImage.do?fileSn=1&atchFileId=FILE_123',
+        imageUrl: 'https://www.forest.go.kr/newkfsweb/cmm/fms/getImage.do?fileSn=1&atchFileId=FILE_123',
         subtitle: '수차례 화마가 쓸고 갔던 불의 산',
         description: '관악산은 서울시 관악구와 금천구에 걸쳐 있다.\n위험한 암릉이 있다.',
         transportInfo: '지하철이 가장 편리하다. \n> 2호선 신림역\n버스 이용 가능',

@@ -23,7 +23,10 @@ export class GlobalExceptionFilter implements ExceptionFilter {
   private logException(exception: unknown, request: Request, statusCode: number, message: string) {
     const method = request.method;
     const url = request.originalUrl || request.url;
-    const logMessage = `${method} ${url} ${statusCode} - ${message}`;
+    const cause = this.formatExceptionCause(exception);
+    const logMessage = cause
+      ? `${method} ${url} ${statusCode} - ${message} | ${cause}`
+      : `${method} ${url} ${statusCode} - ${message}`;
     const stack = exception instanceof Error ? exception.stack : undefined;
 
     if (statusCode >= HttpStatus.INTERNAL_SERVER_ERROR) {
@@ -73,6 +76,19 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
       message: '서버 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.',
     };
+  }
+
+  private formatExceptionCause(exception: unknown): string {
+    if (!(exception instanceof Error) || exception.cause === undefined) {
+      return '';
+    }
+
+    const cause = exception.cause;
+    if (cause instanceof Error) {
+      return `cause=${cause.name}: ${cause.message}`;
+    }
+
+    return `cause=${String(cause)}`;
   }
 
   private normalizeMessage(message: string | string[]): string {
