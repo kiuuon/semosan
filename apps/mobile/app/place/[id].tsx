@@ -205,7 +205,14 @@ export default function PlaceDetailScreen() {
         </>
       ) : (
         <>
-          <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
+          <ScrollView
+            style={styles.scroll}
+            nestedScrollEnabled
+            keyboardDismissMode="on-drag"
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            bounces={false}
+          >
             <View style={styles.hero}>
               {heroImage ? (
                 <Pressable
@@ -251,6 +258,7 @@ export default function PlaceDetailScreen() {
                   {gallery.length > 0 ? (
                     <ScrollView
                       horizontal
+                      nestedScrollEnabled
                       showsHorizontalScrollIndicator={false}
                       contentContainerStyle={styles.gallery}
                     >
@@ -415,6 +423,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.white,
+  },
+  scroll: {
+    flex: 1,
   },
   hero: {
     position: 'relative',

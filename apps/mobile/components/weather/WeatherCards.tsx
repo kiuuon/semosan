@@ -159,7 +159,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.sky50,
     borderWidth: 1,
     borderColor: colors.sky100,
-    overflow: 'hidden',
   },
   todayRow: {
     flexDirection: 'row',
@@ -208,7 +207,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.stone100,
-    overflow: 'hidden',
     shadowColor: colors.stone300,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,

@@ -264,7 +264,9 @@ export default function TripSettingsScreen() {
     <DismissKeyboard>
       <AppKeyboardAvoidingView style={styles.root}>
         <ScrollView
+          style={styles.scroll}
           contentContainerStyle={styles.container}
+          nestedScrollEnabled
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
         >
@@ -431,6 +433,9 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: colors.white,
+  },
+  scroll: {
+    flex: 1,
   },
   container: {
     padding: 20,

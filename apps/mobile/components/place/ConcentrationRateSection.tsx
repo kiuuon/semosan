@@ -179,7 +179,7 @@ export default function ConcentrationRateSection({ place, startDate, endDate }: 
         </View>
       ) : (
         <>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <ScrollView horizontal nestedScrollEnabled showsHorizontalScrollIndicator={false}>
             <Svg width={chartWidth} height={CHART_HEIGHT}>
               <Line
                 x1={CHART_PADDING_X}

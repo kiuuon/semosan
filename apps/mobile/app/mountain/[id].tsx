@@ -101,7 +101,14 @@ function MountainDetail() {
         </>
       ) : (
         <>
-          <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
+          <ScrollView
+            style={styles.scroll}
+            nestedScrollEnabled
+            keyboardDismissMode="on-drag"
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            bounces={false}
+          >
             <View style={styles.hero}>
               {data?.imageUrl ? (
                 <Image source={{ uri: data.imageUrl }} style={styles.image} />
@@ -191,6 +198,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.white,
+  },
+  scroll: {
+    flex: 1,
   },
   hero: {
     position: 'relative',
