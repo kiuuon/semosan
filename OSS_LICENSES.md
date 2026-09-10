@@ -12,13 +12,14 @@
 | `@tanstack/react-query` | 5.101.0 | MIT | [link](https://github.com/TanStack/query) |
 | `axios` | 1.17.0 | MIT | [link](https://github.com/axios/axios) |
 | `expo` | 54.0.34 | MIT | [link](https://github.com/expo/expo) |
-| `expo-clipboard` | 57.0.1 | MIT | [link](https://github.com/expo/expo) |
+| `expo-clipboard` | 8.0.8 | MIT | [link](https://github.com/expo/expo) |
 | `expo-constants` | 18.0.13 | MIT | [link](https://github.com/expo/expo) |
 | `expo-font` | 14.0.12 | MIT | [link](https://github.com/expo/expo) |
 | `expo-linking` | 8.0.12 | MIT | [link](https://github.com/expo/expo) |
 | `expo-location` | 19.0.8 | MIT | [link](https://github.com/expo/expo) |
 | `expo-router` | 6.0.24 | MIT | [link](https://github.com/expo/expo) |
-| `expo-secure-store` | 56.0.4 | MIT | [link](https://github.com/expo/expo) |
+| `expo-secure-store` | 15.0.8 | MIT | [link](https://github.com/expo/expo) |
+| `expo-splash-screen` | 31.0.13 | MIT | [link](https://github.com/expo/expo) |
 | `expo-status-bar` | 3.0.9 | MIT | [link](https://github.com/expo/expo) |
 | `react` | 19.1.0 | MIT | [link](https://github.com/facebook/react) |
 | `react-native` | 0.81.5 | MIT | [link](https://github.com/facebook/react-native) |

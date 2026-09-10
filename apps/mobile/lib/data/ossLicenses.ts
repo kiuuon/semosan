@@ -53,7 +53,7 @@ export const OSS_LICENSES: OssLicenseItem[] = [
   },
   {
     name: "expo-clipboard",
-    version: "57.0.1",
+    version: "8.0.8",
     license: "MIT",
     repository: "https://github.com/expo/expo",
   },
@@ -89,7 +89,13 @@ export const OSS_LICENSES: OssLicenseItem[] = [
   },
   {
     name: "expo-secure-store",
-    version: "56.0.4",
+    version: "15.0.8",
+    license: "MIT",
+    repository: "https://github.com/expo/expo",
+  },
+  {
+    name: "expo-splash-screen",
+    version: "31.0.13",
     license: "MIT",
     repository: "https://github.com/expo/expo",
   },
